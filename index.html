@@ -1,0 +1,861 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ペーパーレスへの最短距離は？</title>
+<style>
+  :root{
+    --paper:#E8EBE6; --rule:#CBD3C8; --ink:#22312B; --soft:#6E7F76;
+    --seal:#B93B2E; --card:#F4F6F2;
+    --z1:#7A6BA8; --z2:#C4703F; --z3:#3F8C74;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background-color:var(--paper);
+    background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);
+    background-size:28px 28px;
+    color:var(--ink);
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Yu Gothic UI",Meiryo,system-ui,sans-serif;
+    font-feature-settings:"palt" 1; line-height:1.75; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:680px;margin:0 auto;padding:36px 16px 80px}
+  .sheet{background:var(--card);border:1px solid var(--ink);padding:30px 26px}
+  h1{font-size:clamp(28px,7vw,44px);font-weight:700;letter-spacing:-.02em;line-height:1.25;margin:0 0 14px}
+  .catch{font-size:16px;font-weight:700;color:var(--seal);margin:0 0 12px}
+  .lede{font-size:14.5px;color:var(--soft);margin:0 0 22px;max-width:34em}
+  svg{display:block;width:100%;height:auto}
+  button{font-family:inherit}
+  .go{background:var(--ink);color:var(--card);border:none;padding:14px 26px;font-size:16px;font-weight:700;cursor:pointer}
+  .go:hover{background:var(--seal)}
+  .ghost{background:none;border:1px solid var(--soft);color:var(--soft);padding:9px 16px;font-size:13px;cursor:pointer}
+  .ghost:hover{border-color:var(--ink);color:var(--ink)}
+  .dl{background:var(--seal);color:#fff;border:none;padding:13px 22px;font-size:15px;font-weight:700;cursor:pointer}
+  .dl:hover{background:var(--ink)}
+  .go:focus-visible,.ghost:focus-visible,.opt:focus-visible,.dl:focus-visible,.fi:focus{outline:2px solid var(--seal);outline-offset:2px}
+  .steps{display:flex;gap:5px;margin-bottom:24px}
+  .steps i{flex:1;height:7px;border:1px solid var(--rule)}
+  .steps i.done{background:var(--ink);border-color:var(--ink)}
+  .steps i.now{background:var(--seal);border-color:var(--seal)}
+  .qnum{font-size:12px;color:var(--soft);margin:0 0 6px}
+  .qtext{font-size:19px;font-weight:700;line-height:1.55;margin:0 0 6px}
+  .qnote{font-size:13px;color:var(--soft);margin:0 0 18px}
+  .opt{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--rule);padding:14px 16px;margin-bottom:9px;font-size:15px;line-height:1.5;color:var(--ink);cursor:pointer}
+  .opt:hover{border-color:var(--ink);background:#fff}
+  .fl{display:block;font-size:13px;font-weight:700;margin:16px 0 6px}
+  .fl span{font-weight:400;color:var(--seal);font-size:12px;margin-left:6px}
+  .fi{width:100%;background:#fff;border:1px solid var(--rule);padding:12px 14px;font-family:inherit;font-size:15px;color:var(--ink)}
+  .fi.bad{border-color:var(--seal);background:#fff6f5}
+  .err{font-size:13px;color:var(--seal);margin:6px 0 0}
+  .use{background:#fff;border:1px solid var(--rule);padding:13px 15px;font-size:13px;color:var(--soft);margin:20px 0 14px;line-height:1.7}
+  .use b{color:var(--ink);display:block;margin-bottom:4px}
+  .agree{display:flex;gap:9px;align-items:flex-start;font-size:14px;cursor:pointer;margin-bottom:18px}
+  .agree input{margin:5px 0 0;flex:none;width:17px;height:17px;accent-color:var(--seal)}
+  .who{font-size:13px;color:var(--soft);border-bottom:1px solid var(--rule);padding-bottom:10px;margin-bottom:18px}
+  .dist{display:flex;align-items:baseline;gap:10px;border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:8px;flex-wrap:wrap}
+  .dist b{font-size:46px;line-height:1;font-weight:700;color:var(--seal)}
+  .dist span{font-size:13.5px;color:var(--soft)}
+  .rtype{font-size:24px;font-weight:700;margin:14px 0 4px}
+  .rsub{font-size:14px;color:var(--soft);margin:0 0 6px}
+  .verdict{border:1px solid var(--ink);border-left:5px solid var(--seal);background:#fff;padding:14px 16px;margin:18px 0}
+  .verdict p{margin:0;font-size:15px}
+  .alt{border:1px dashed var(--soft);background:transparent;padding:14px 16px;margin:16px 0;font-size:14px}
+  .alt b{display:block;margin-bottom:5px;font-size:13.5px}
+  h2.sec{font-size:13px;font-weight:700;margin:30px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--rule)}
+  .zone{margin-bottom:18px}
+  .zhead{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;margin-bottom:8px}
+  .zdot{width:11px;height:11px;border-radius:50%;flex:none}
+  .zcount{font-size:12px;color:var(--soft);font-weight:400}
+  .li{display:flex;gap:10px;padding:5px 0;font-size:14px;align-items:flex-start}
+  .li .n{flex:none;width:24px;height:24px;border-radius:50%;border:1.5px solid var(--rule);color:var(--soft);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1}
+  .li.ok .n{background:var(--ink);border-color:var(--ink);color:var(--card)}
+  .li.ok{color:var(--soft)}
+  .li.now .n{border-color:var(--seal);color:var(--seal)}
+  .li.now{font-weight:700}
+  .zex{font-size:12.5px;color:var(--seal);margin:6px 0 0;padding-left:34px}
+  .li em{font-style:normal;font-size:11px;color:var(--seal);border:1px solid var(--seal);padding:0 5px;margin-left:6px}
+  .card{border:1px solid var(--ink);border-left:4px solid var(--seal);background:#fff;padding:15px 17px;margin-bottom:12px}
+  .tag{display:inline-block;font-size:11px;font-weight:700;color:var(--card);background:var(--seal);padding:2px 8px;margin-bottom:8px}
+  .ct{font-size:17px;font-weight:700;margin:0 0 6px;line-height:1.5}
+  .cl{font-size:13.5px;color:var(--soft);margin:0 0 10px}
+  .cb{font-size:14.5px;margin:0}
+  .chk{margin-top:12px;padding-top:10px;border-top:1px dashed var(--rule);font-size:13.5px;color:var(--soft)}
+  .chk b{color:var(--ink)}
+  .memo{width:100%;min-height:220px;background:#fff;border:1px solid var(--rule);padding:15px;font-family:inherit;font-size:13.5px;line-height:1.85;color:var(--ink);resize:vertical}
+  .row{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+  .copied{font-size:13px;color:var(--seal)}
+  .qrbox{display:flex;gap:20px;align-items:center;background:#fff;border:1px solid var(--ink);padding:18px;flex-wrap:wrap}
+  .qrimg{flex:none;line-height:0}
+  .qrimg svg{width:200px;height:200px}
+  .qrtxt{flex:1;min-width:220px}
+  .qrlead{font-size:15px;font-weight:700;margin:0 0 8px}
+  .qrnote{font-size:13.5px;color:var(--soft);margin:0 0 12px}
+  .warn{background:#fff6f5;border:1px solid var(--seal);color:var(--seal);font-size:13px;padding:11px 14px;margin:12px 0 0;line-height:1.7}
+  .warn b{display:block;margin-bottom:3px}
+  .qrcard{font-size:13.5px;color:var(--seal);border-top:1px dashed var(--rule);padding-top:10px;margin:0}
+  .foot{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);font-size:13px;color:var(--soft)}
+  @media print{body{background:none}.sheet{border:none;padding:0}.row,.dl,.ghost,.go{display:none}}
+</style>
+<div class="wrap"><div class="sheet" id="app"></div></div>
+
+<script>
+/* ===== 設定 =====================================================
+   mode      : "kiosk" = 展示会用（氏名・アドレス入力なし、結果にQR表示）
+               "web"   = 通常公開用（会社名・氏名＋アドレス登録あり）
+   publicUrl : このページを公開するURL。★展示会前に必ず実URLへ★
+   idleReset : 結果画面で無操作のまま最初に戻るまでの秒数
+   ================================================================ */
+const CONFIG={
+  mode:"kiosk",
+  // publicUrl を空にすると、いま開いているページのURLを自動で使います。
+  // 公開サーバーに置けばそのまま正しいQRになります。
+  // 別URLで公開する場合だけ、ここに記入してください。
+  publicUrl:"",
+  idleReset:120, gateBeforeResult:true, privacyUrl:"#"
+};
+
+async function submitLead(payload){ console.log("[送信データ]",payload); return true; }
+
+const QR={};
+/* 最小構成のQRコード生成（バイトモード／誤り訂正レベルM／型番1-10）
+   外部ライブラリ不要。qrMatrix(text) が真偽値の二次元配列を返す。 */
+(function(root){
+  // --- GF(256) -------------------------------------------------
+  const EXP=new Uint8Array(512), LOG=new Uint8Array(256);
+  for(let i=0,x=1;i<255;i++){EXP[i]=x;LOG[x]=i;x<<=1;if(x&0x100)x^=0x11D;}
+  for(let i=255;i<512;i++)EXP[i]=EXP[i-255];
+  const mul=(a,b)=>(a===0||b===0)?0:EXP[LOG[a]+LOG[b]];
+
+  function rsGen(n){
+    let g=[1];
+    for(let i=0;i<n;i++){
+      const ng=new Array(g.length+1).fill(0);
+      for(let j=0;j<g.length;j++){ ng[j]^=mul(g[j],1); ng[j+1]^=mul(g[j],EXP[i]); }
+      g=ng;
+    }
+    return g;
+  }
+  function rsEncode(data,n){
+    const g=rsGen(n), res=new Array(n).fill(0);
+    for(const d of data){
+      const f=d^res[0];
+      res.shift(); res.push(0);
+      if(f!==0) for(let i=0;i<n;i++) res[i]^=mul(g[i+1],f);
+    }
+    return res;
+  }
+
+  // --- 型番ごとの諸元（レベルM）---------------------------------
+  // [総コードワード数, 1ブロックあたりEC数, [ [ブロック数, データ数], ... ]]
+  const SPEC={
+    1:[26,10,[[1,16]]],          2:[44,16,[[1,28]]],
+    3:[70,26,[[1,44]]],          4:[100,18,[[2,32]]],
+    5:[134,24,[[2,43]]],         6:[172,16,[[4,27]]],
+    7:[196,18,[[4,31]]],         8:[242,22,[[2,38],[2,39]]],
+    9:[292,22,[[3,36],[2,37]]], 10:[346,26,[[4,43],[1,44]]]
+  };
+  const ALIGN={1:[],2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],
+               7:[6,22,38],8:[6,24,42],9:[6,26,46],10:[6,28,50]};
+  const REMAINDER={1:0,2:7,3:7,4:7,5:7,6:7,7:0,8:0,9:0,10:0};
+
+  const dataCapacity=v=>SPEC[v][2].reduce((s,[b,d])=>s+b*d,0);
+
+  // --- ビット列 -------------------------------------------------
+  function bitsFor(bytes,version){
+    const cap=dataCapacity(version), bits=[];
+    const push=(val,len)=>{for(let i=len-1;i>=0;i--)bits.push((val>>i)&1);};
+    push(4,4);                                  // バイトモード
+    push(bytes.length, version<10?8:16);        // 文字数
+    for(const b of bytes) push(b,8);
+    for(let i=0;i<4&&bits.length<cap*8;i++) bits.push(0);   // 終端
+    while(bits.length%8) bits.push(0);
+    const cw=[];
+    for(let i=0;i<bits.length;i+=8){let v=0;for(let j=0;j<8;j++)v=(v<<1)|bits[i+j];cw.push(v);}
+    const PAD=[0xEC,0x11];
+    for(let i=0;cw.length<cap;i++) cw.push(PAD[i%2]);
+    return cw;
+  }
+
+  function interleave(cw,version){
+    const [,ecLen,groups]=SPEC[version];
+    const blocks=[]; let p=0;
+    for(const [count,dlen] of groups)
+      for(let i=0;i<count;i++){ const d=cw.slice(p,p+dlen); p+=dlen; blocks.push({d,e:rsEncode(d,ecLen)}); }
+    const out=[];
+    const maxD=Math.max(...blocks.map(b=>b.d.length));
+    for(let i=0;i<maxD;i++) for(const b of blocks) if(i<b.d.length) out.push(b.d[i]);
+    for(let i=0;i<ecLen;i++) for(const b of blocks) out.push(b.e[i]);
+    return out;
+  }
+
+  // --- 配置 -----------------------------------------------------
+  function skeleton(version){
+    const n=17+4*version;
+    const m=Array.from({length:n},()=>new Array(n).fill(null));
+    const fixed=Array.from({length:n},()=>new Array(n).fill(false));
+    const setF=(r,c,v)=>{m[r][c]=v;fixed[r][c]=true;};
+
+    const finder=(R,C)=>{
+      for(let r=-1;r<=7;r++) for(let c=-1;c<=7;c++){
+        const rr=R+r, cc=C+c;
+        if(rr<0||cc<0||rr>=n||cc>=n) continue;
+        const on=(r>=0&&r<=6&&(c===0||c===6))||(c>=0&&c<=6&&(r===0||r===6))||(r>=2&&r<=4&&c>=2&&c<=4);
+        setF(rr,cc,on?1:0);
+      }
+    };
+    finder(0,0); finder(0,n-7); finder(n-7,0);
+
+    for(let i=8;i<n-8;i++){ setF(6,i,i%2===0?1:0); setF(i,6,i%2===0?1:0); }
+
+    const ap=ALIGN[version];
+    for(const r of ap) for(const c of ap){
+      if((r<=8&&c<=8)||(r<=8&&c>=n-9)||(r>=n-9&&c<=8)) continue;
+      for(let dr=-2;dr<=2;dr++) for(let dc=-2;dc<=2;dc++){
+        const on=Math.max(Math.abs(dr),Math.abs(dc))!==1;
+        setF(r+dr,c+dc,on?1:0);
+      }
+    }
+    setF(n-8,8,1);                                   // 常に暗のモジュール
+
+    // 形式情報の領域を予約
+    for(let i=0;i<9;i++){ if(m[8][i]===null)setF(8,i,0); if(m[i][8]===null)setF(i,8,0); }
+    for(let i=0;i<8;i++){ if(m[8][n-1-i]===null)setF(8,n-1-i,0); if(m[n-1-i][8]===null)setF(n-1-i,8,0); }
+    // 型番情報の領域を予約（型番7以上）
+    if(version>=7)
+      for(let i=0;i<6;i++) for(let j=0;j<3;j++){ setF(i,n-11+j,0); setF(n-11+j,i,0); }
+
+    return {m,fixed,n};
+  }
+
+  function placeData(m,fixed,n,codewords){
+    const bits=[];
+    for(const b of codewords) for(let i=7;i>=0;i--) bits.push((b>>i)&1);
+    let idx=0, up=true;
+    for(let col=n-1;col>0;col-=2){
+      if(col===6) col--;
+      for(let k=0;k<n;k++){
+        const row=up?n-1-k:k;
+        for(const c of [col,col-1]){
+          if(fixed[row][c]) continue;
+          m[row][c]= idx<bits.length ? bits[idx] : 0;
+          idx++;
+        }
+      }
+      up=!up;
+    }
+  }
+
+  const MASKS=[
+    (r,c)=>(r+c)%2===0,
+    (r)=>r%2===0,
+    (r,c)=>c%3===0,
+    (r,c)=>(r+c)%3===0,
+    (r,c)=>(Math.floor(r/2)+Math.floor(c/3))%2===0,
+    (r,c)=>((r*c)%2+(r*c)%3)===0,
+    (r,c)=>(((r*c)%2+(r*c)%3)%2)===0,
+    (r,c)=>(((r+c)%2+(r*c)%3)%2)===0
+  ];
+
+  function bch15(fmt){
+    let d=fmt<<10;
+    for(let i=14;i>=10;i--) if((d>>i)&1) d^=0x537<<(i-10);
+    return ((fmt<<10)|d)^0x5412;
+  }
+  function bch18(ver){
+    let d=ver<<12;
+    for(let i=17;i>=12;i--) if((d>>i)&1) d^=0x1F25<<(i-12);
+    return (ver<<12)|d;
+  }
+
+  function applyFormat(m,n,mask){
+    const f=bch15((0<<3)|mask);   // レベルM = 00
+    const bit=i=>(f>>i)&1;
+    for(let i=0;i<=5;i++) m[8][i]=bit(i);
+    m[8][7]=bit(6); m[8][8]=bit(7); m[7][8]=bit(8);
+    for(let i=9;i<=14;i++) m[14-i][8]=bit(i);
+    for(let i=0;i<=7;i++) m[n-1-i][8]=bit(i);
+    for(let i=8;i<=14;i++) m[8][n-15+i]=bit(i);
+    m[n-8][8]=1;
+  }
+  function applyVersion(m,n,version){
+    if(version<7) return;
+    const v=bch18(version);
+    for(let i=0;i<18;i++){
+      const b=(v>>i)&1, r=Math.floor(i/3), c=i%3;
+      m[r][n-11+c]=b; m[n-11+c][r]=b;
+    }
+  }
+
+  function penalty(m,n){
+    let p=0;
+    // 規則1：同色の連続
+    for(let i=0;i<n;i++){
+      for(const line of [m[i], m.map(r=>r[i])]){
+        let run=1;
+        for(let j=1;j<n;j++){
+          if(line[j]===line[j-1]) run++;
+          else { if(run>=5) p+=3+(run-5); run=1; }
+        }
+        if(run>=5) p+=3+(run-5);
+      }
+    }
+    // 規則2：2x2の同色ブロック
+    for(let r=0;r<n-1;r++) for(let c=0;c<n-1;c++)
+      if(m[r][c]===m[r][c+1]&&m[r][c]===m[r+1][c]&&m[r][c]===m[r+1][c+1]) p+=3;
+    // 規則3：1:1:3:1:1 のパターン
+    const PA=[1,0,1,1,1,0,1,0,0,0,0], PB=[0,0,0,0,1,0,1,1,1,0,1];
+    const match=(line,s,pat)=>pat.every((v,k)=>line[s+k]===v);
+    for(let i=0;i<n;i++){
+      const row=m[i], col=m.map(r=>r[i]);
+      for(let j=0;j+11<=n;j++){
+        if(match(row,j,PA)||match(row,j,PB)) p+=40;
+        if(match(col,j,PA)||match(col,j,PB)) p+=40;
+      }
+    }
+    // 規則4：暗モジュールの比率
+    let dark=0; for(let r=0;r<n;r++) for(let c=0;c<n;c++) dark+=m[r][c];
+    const pct=dark*100/(n*n);
+    p+=Math.floor(Math.abs(pct-50)/5)*10;
+    return p;
+  }
+
+  function qrMatrix(text){
+    const bytes=Array.from(new TextEncoder().encode(text));
+    let version=0;
+    for(let v=1;v<=10;v++){
+      const head=4+(v<10?8:16);
+      if(head+bytes.length*8 <= dataCapacity(v)*8){ version=v; break; }
+    }
+    if(!version) throw new Error("データが長すぎます");
+
+    const cw=interleave(bitsFor(bytes,version),version);
+    let best=null;
+    for(let mask=0;mask<8;mask++){
+      const {m,fixed,n}=skeleton(version);
+      placeData(m,fixed,n,cw);
+      for(let r=0;r<n;r++) for(let c=0;c<n;c++)
+        if(!fixed[r][c] && MASKS[mask](r,c)) m[r][c]^=1;
+      applyFormat(m,n,mask);
+      applyVersion(m,n,version);
+      const p=penalty(m,n);
+      if(!best||p<best.p) best={p,m,n,mask,version};
+    }
+    return best;
+  }
+
+  function qrSVG(text,size,quiet){
+    const {m,n}=qrMatrix(text);
+    const q=quiet===undefined?4:quiet, total=n+q*2, s=(size||220)/total;
+    let d="";
+    for(let r=0;r<n;r++) for(let c=0;c<n;c++)
+      if(m[r][c]) d+=`M${((c+q)*s).toFixed(3)} ${((r+q)*s).toFixed(3)}h${s.toFixed(3)}v${s.toFixed(3)}h-${s.toFixed(3)}z`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size||220}" height="${size||220}" viewBox="0 0 ${size||220} ${size||220}" shape-rendering="crispEdges" role="img" aria-label="診断結果のQRコード"><rect width="100%" height="100%" fill="#FFFFFF"/><path d="${d}" fill="#000000"/></svg>`;
+  }
+
+  root.qrMatrix=qrMatrix; root.qrSVG=qrSVG;
+})(QR);
+
+/* ===== 設問と判定 =============================================
+   関門式：ステップ1から順に通過を確認し、最初の未通過で打ち切る。
+   各選択肢の note が、そのまま結果画面の診断文になる。
+   ============================================================== */
+
+const STEPS=[
+  {n:1,z:0,t:"現状把握",l:"部門ごとの収納量・内訳・紙依存を数値にする"},
+  {n:2,z:0,t:"目的とゴールを明確にする",l:"何のために、どうなれば達成かを一文で決める"},
+  {n:3,z:0,t:"トップが実施を決断する",l:"経営の意思として、社内に示す"},
+  {n:4,z:1,t:"方針と対象を決める",l:"保管方針・削減方針と、何をペーパーレス化するか"},
+  {n:5,z:1,t:"プロジェクト担当者を決める",l:"各部門に進める人を立て、説明する"},
+  {n:6,z:1,t:"全社説明を行う",l:"目的と方針を、全社員に直接伝える"},
+  {n:7,z:2,t:"部門ごとに推進する",l:"進捗は担当者から確認する"},
+  {n:8,z:2,t:"成果報告会を行う",l:"定期的に開き、方針を更新していく"}
+];
+
+const GATES=[
+ {n:1,q:"部門ごとの紙の量と内訳を、数字で把握していますか？",
+  note:"感覚ではなく、数値として持っているかどうかでお答えください。",
+  opts:[
+   {t:"全部門を調査し、数値で持っている",pass:true},
+   {t:"一部の部門・書庫だけ数えた",
+    note:"一部だけの数字では、部門間の比較ができません。どこにどれだけ偏っているかが見えないまま方針を立てると、全社一律の削減目標になり、現場の納得が得られなくなります。"},
+   {t:"量は分からないが、どこに多いかは感覚で分かる",
+    note:"感覚で分かっていることと、数値で示せることは別物です。経営に判断を求める場面では、感覚は材料になりません。まず全部門の収納量と内訳を数値にするところからです。"},
+   {t:"把握していない",
+    note:"ここが出発点です。部門ごとの収納量・内訳・紙依存の状況を数値にすると、目的設定にも経営の決断にも、そのまま材料として使えます。"}
+  ]},
+ {n:2,q:"「何のために、どうなれば達成か」を一文で言えますか？",
+  opts:[
+   {t:"文章になっていて、経営層と現場で共有されている",pass:true},
+   {t:"文章はあるが、共有はこれから",
+    note:"文章があるなら、あと一歩です。共有されていない目的は、他部門にとっては存在しないのと同じです。全社説明の前に、経営層と推進側で読み合わせてください。"},
+   {t:"目的はあるが、達成の状態は決めていない",
+    note:"達成の状態が決まっていないと、取り組みがいつまでも終わりません。「どうなれば達成か」を先に決めると、対象を広げすぎることも防げます。"},
+   {t:"どちらもこれから",
+    note:"ここが決まらない限り、何を導入しても評価ができません。コスト・法令リスク・働き方のどれを主目的にするか、一つに絞るところからです。"}
+  ]},
+ {n:3,q:"経営として「やる」と決まっていますか？",
+  opts:[
+   {t:"経営会議で決定し、全社に共有されている",pass:true},
+   {t:"役員レベルでは合意しているが、全社には出ていない",
+    note:"合意と決定は別物です。全社に出ていない限り、他部門にとっては総務からの依頼のままで、優先順位が上がりません。"},
+   {t:"検討はされているが、決定には至っていない",
+    note:"決まらない理由は、意思ではなく材料の不足であることが多いです。部門ごとの数値が揃うと、検討は決定に変わりやすくなります。"},
+   {t:"まだ議題に上がっていない",
+    note:"施策の検討より先に、議題として一度載せることです。資料の完成度より、決める場に持ち込むことが優先されます。"}
+  ]},
+ {n:4,q:"残す文書・減らす文書・電子化する文書の区分は、いまの運用で機能していますか？",
+  opts:[
+   {t:"区分に沿って運用され、実際に紙が減っている",pass:true},
+   {t:"文書規程はあるが、その通りにしても紙は減らない",
+    note:"よくある状態です。規程が法定保存年限をなぞっただけで、削減の観点が入っていないと、守っても紙は減りません。ゼロからつくり直す話ではなく、いまの規程のどこが紙を残しているかを特定する作業になります。"},
+   {t:"保存年限の一覧はあるが、削減の方針まではない",
+    note:"一覧があるのは強みです。そこに「減らす」「電子化する」の区分を足せば、方針として機能します。"},
+   {t:"区分そのものが決まっていない",
+    note:"残す・減らす・電子化するの三つに分けるところからです。文書の種類ごとに決めておくと、部門ごとの判断のばらつきが減ります。"}
+  ]},
+ {n:5,q:"プロジェクトを進める担当者は決まっていますか？",
+  opts:[
+   {t:"各部門に担当者が決まり、顔合わせや説明も済んでいる",pass:true},
+   {t:"担当者は決まっているが、集まって話してはいない",
+    note:"名前が挙がっているだけでは動きません。一度集めて、目的と方針を共有する場をつくってください。"},
+   {t:"一部の部門だけ決まっている",
+    note:"決まっていない部門が、そのまま進まない部門になります。全部門で立てることが前提です。"},
+   {t:"これから決める",
+    note:"全社説明の前に決めるのが順番です。説明を受け止める側がいないと、通知で終わります。"}
+  ]},
+ {n:6,q:"目的と方針を全社員に説明する場は持ちましたか？",
+  opts:[
+   {t:"経営から全社員に直接説明した",pass:true},
+   {t:"部署ごとに担当者が説明した",
+    note:"担当者の説明では、経営の決定としては伝わりません。一度でよいので、経営から直接話す場をつくってください。"},
+   {t:"資料やメールで通知した",
+    note:"通知と説明は別物です。通知だけでは、目的が伝わらないまま作業だけが降りてきた状態になります。"},
+   {t:"まだ",
+    note:"方針が固まっているなら、次はここです。ステップ2で決めた一文を、そのまま使ってください。"}
+  ]},
+ {n:7,q:"部門ごとの進捗は、定期的に集まってきますか？",
+  opts:[
+   {t:"決まった頻度で報告が上がる仕組みがある",pass:true},
+   {t:"聞けば分かるが、仕組みはない",
+    note:"聞きに行く負荷が総務に残り続けます。頻度と様式を決めるだけで、追いかける手間は大きく減ります。"},
+   {t:"部門任せで、状況は見えていない",
+    note:"見えないまま進むと、成果の報告もできません。進捗を集める形を先に決めてください。"},
+   {t:"まだ動き出していない",
+    note:"方針と担当者が揃っているなら、あとは動かすだけです。部門ごとの着手順を決めてください。"}
+  ]},
+ {n:8,q:"成果を共有する場は開かれていますか？",
+  opts:[
+   {t:"定期的に開き、方針の見直しもしている",pass:true},
+   {t:"開いたことはあるが、単発",
+    note:"単発では方針が更新されません。定期開催になって初めて、仕組みとして残ります。"},
+   {t:"予定はあるが、まだ開いていない",
+    note:"一度開くと、次の対象が見えてきます。完璧な成果を待たず、途中経過で開いてください。"},
+   {t:"開いていない",
+    note:"ここまで来ていれば、あとは共有の場をつくるだけです。成果が見えると、次の部門が動きやすくなります。"}
+  ]}
+];
+
+const QMAP={
+  where:{id:"where",q:"紙がいちばん多く残っているのはどこですか？",
+    opts:[{t:"社内の申請・承認（押印を含む）",v:"approval"},
+          {t:"顧客・取引先とのやり取り（契約書・請求書など）",v:"external"},
+          {t:"過去分の保管（書庫・キャビネット）",v:"archive"},
+          {t:"全体に分散していて、特定できない",v:"all"}]},
+  why:{id:"why",q:"社内で語られている理由に、いちばん近いのは？",
+    opts:[{t:"印刷費・保管スペース・郵送費などのコスト",v:"cost"},
+          {t:"電子帳簿保存法やインボイスなど、法令・リスクへの対応",v:"risk"},
+          {t:"リモートワークや業務スピードなど、働き方の改善",v:"work"},
+          {t:"特に語られていない",v:"none"}]},
+  goal:{id:"goal",q:"最終的に、どうなれば達成ですか？",
+    note:"この答えが、取り組みの難易度を大きく左右します。",
+    opts:[{t:"紙を一切使わない状態にしたい",v:"zero"},
+          {t:"紙は残ってもよい。保管をなくしたい",v:"stockless"},
+          {t:"特定の業務から紙を外せれば十分",v:"partial"},
+          {t:"決めていない",v:"undef"}]}
+};
+GATES.forEach(g=>QMAP["g"+g.n]={id:"g"+g.n,q:g.q,note:g.note,opts:g.opts,gate:g.n});
+
+
+const ZONES=[
+  {n:"区間1　決める",c:"var(--z1)",from:1,to:3,ex:"部門ごとの収納量・内訳・紙依存を数値化する"},
+  {n:"区間2　固める",c:"var(--z2)",from:4,to:6,ex:"削減方針・保管方針を設計し、対象を切り分ける"},
+  {n:"区間3　回す", c:"var(--z3)",from:7,to:8,ex:"進捗の見方と、報告会での更新の仕方を整える"}];
+
+const PURPOSE={cost:{l:"コスト削減",f:"年間の印刷・保管・郵送コストを金額で示すこと"},
+  risk:{l:"法令・リスク対応",f:"対応しなかった場合に起きる不備とその影響を示すこと"},
+  work:{l:"働き方・業務効率",f:"どの業務が何時間短くなるかを部署名つきで示すこと"},
+  none:{l:"未設定",f:"目的を一つに絞ること。候補はコスト・リスク・働き方の三つ"}};
+const GOAL={zero:{l:"完全ペーパーレス",n:"紙をゼロにする前提は、多くの企業で途中で止まります。まず「保管をなくす（ペーパーストックレス）」に置き換えられないか検討してください。ゴールを下げるのではなく、達成できる位置に置き直す作業です。"},
+  stockless:{l:"ペーパーストックレス",n:"現実的で、成果も測りやすいゴールです。方針づくりの議論も具体的になります。"},
+  partial:{l:"業務単位の部分適用",n:"範囲が明確で、合意を取りやすい設定です。ここで実績を出し、次の対象へ広げてください。"},
+  undef:{l:"未定",n:"ここが決まらない限り、何を導入しても評価ができません。最初の一手はツール比較ではなく、ゴールの言語化です。"}};
+const WHERE={approval:{l:"社内の申請・承認",a:"承認を伴う文書が中心になります"},
+  external:{l:"取引先とのやり取り",a:"相手のある文書なので、社内方針を固めてから当たります"},
+  archive:{l:"過去分の保管",a:"保存年限の棚卸しが、そのまま保管方針になります"},
+  all:{l:"全体に分散",a:"まず部署を一つ選び、そこから数えるのが現実的です"}};
+
+/* ===== 回答コード（QR用）======================================= */
+const C_WHY={cost:"c",risk:"r",work:"w",none:"n"}, C_GOAL={zero:"z",stockless:"s",partial:"p",undef:"u"},
+      C_WHERE={approval:"a",external:"e",archive:"v",all:"l"};
+const rev=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[v,k]));
+function encodeAns(){
+  let g="";
+  for(let n=1;n<=8;n++) g += (gateAns[n]===undefined?"x":String(gateAns[n]));
+  return C_WHERE[ans.where]+C_WHY[ans.why]+C_GOAL[ans.goal]+g;
+}
+function decodeAns(code){
+  if(!/^[a-z]{3}[0-3x]{8}$/.test(code)) return null;
+  const w=rev(C_WHERE)[code[0]], y=rev(C_WHY)[code[1]], g=rev(C_GOAL)[code[2]];
+  if(!w||!y||!g) return null;
+  const ga={};
+  for(let i=0;i<8;i++){ const ch=code[3+i]; if(ch!=="x") ga[i+1]=+ch; }
+  return {ans:{where:w,why:y,goal:g}, gateAns:ga};
+}
+function baseUrl(){
+  const set=(CONFIG.publicUrl||"").trim();
+  if(set) return set.split("#")[0];
+  return String(location.href||"").split("#")[0];
+}
+function resultUrl(){ return baseUrl()+"#r="+encodeAns(); }
+function urlWarning(){
+  const b=baseUrl();
+  if(/example\.com/i.test(b))
+    return "設定の publicUrl が例示用のURLのままです。実際の公開URLに書き換えてください。";
+  if(/^file:/i.test(b))
+    return "このページをファイルとして直接開いています。QRを他の端末から読み取るには、サーバーに公開したURLで表示してください。";
+  if(/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(b))
+    return "URLが localhost になっています。会場の他の端末からは開けません。公開URLで表示してください。";
+  return "";
+}
+
+/* ===== 状態 ==================================================== */
+let phase="hero", qi=0, flow=["where"], fromPhone=false, idleTimer=null;
+const ans={}, gateAns={}, lead={};
+const app=document.getElementById("app");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const validMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
+
+function judge(){
+  let cleared=0, gateAt=null, choice=null;
+  for(let n=1;n<=8;n++){
+    const a=gateAns[n];
+    if(a===undefined) break;
+    if(GATES[n-1].opts[a].pass) cleared++;
+    else { gateAt=n; choice=GATES[n-1].opts[a]; break; }
+  }
+  const completed=(gateAt===null&&cleared===8);
+  return {cleared,gateAt,choice,completed,left:8-cleared};
+}
+
+/* ===== 画面遷移 ================================================ */
+function boot(){
+  const m=(location.hash||"").match(/r=([a-z0-9x]{11})/i);
+  if(m){
+    const d=decodeAns(m[1].toLowerCase());
+    if(d){ Object.assign(ans,d.ans); Object.assign(gateAns,d.gateAns); fromPhone=true; phase="result"; }
+  }
+  render();
+}
+function armIdle(){
+  if(CONFIG.mode!=="kiosk"||fromPhone) return;
+  clearTimeout(idleTimer);
+  idleTimer=setTimeout(reset,CONFIG.idleReset*1000);
+}
+function reset(){
+  clearTimeout(idleTimer);
+  Object.keys(ans).forEach(k=>delete ans[k]);
+  Object.keys(gateAns).forEach(k=>delete gateAns[k]);
+  phase="hero"; qi=0; flow=["where"]; render(); window.scrollTo(0,0);
+}
+function render(){
+  if(phase==="hero") return hero();
+  if(phase==="lead") return leadForm();
+  if(phase==="q")    return question();
+  if(phase==="gate") return gate();
+  return result();
+}
+
+function hero(){
+  app.innerHTML=`
+  <h1>ペーパーレスへの<br>最短距離は？</h1>
+  ${CONFIG.mode==="kiosk"?`<p class="catch">質問に答えるだけ。入力は必要ありません。</p>`
+    :`<p class="catch">重いのは、測ること・分けること・追いかけること。</p>`}
+  <p class="lede">ペーパーレス化の道のりは全8ステップ。決める、固める、回す、の3区間に分かれます。この診断は、あなたの会社がいまどこで止まっているか、最初の関門を特定します。止まっている場所が分かれば、次の一手は決まります。</p>
+  <svg viewBox="0 0 620 210" role="img" aria-label="8ステップにおける総務の負荷">
+    <rect x="20" y="18" width="222" height="26" rx="4" fill="#7A6BA8" opacity=".22"/>
+    <text x="131" y="36" font-size="12.5" fill="var(--ink)" text-anchor="middle">区間1　決める（1〜3）</text>
+    <rect x="248" y="18" width="222" height="26" rx="4" fill="#C4703F" opacity=".22"/>
+    <text x="359" y="36" font-size="12.5" fill="var(--ink)" text-anchor="middle">区間2　固める（4〜6）</text>
+    <rect x="476" y="18" width="124" height="26" rx="4" fill="#3F8C74" opacity=".22"/>
+    <text x="538" y="36" font-size="12.5" fill="var(--ink)" text-anchor="middle">区間3　回す</text>
+    <line x1="20" y1="150" x2="600" y2="150" stroke="var(--rule)"/>
+    <path d="M55 70 L128 95 L200 88 L272 77 L345 92 L417 99 L490 81 L562 102 L562 150 L55 150 Z" fill="#B93B2E" opacity=".16"/>
+    <path d="M55 121 L128 114 L200 117 L272 117 L345 106 L417 110 L490 106 L562 117 L562 150 L55 150 Z" fill="#6E7F76" opacity=".3"/>
+    <path d="M55 70 L128 95 L200 88 L272 77 L345 92 L417 99 L490 81 L562 102" fill="none" stroke="#B93B2E" stroke-width="2" stroke-dasharray="5 3"/>
+    <path d="M55 121 L128 114 L200 117 L272 117 L345 106 L417 110 L490 106 L562 117" fill="none" stroke="var(--ink)" stroke-width="2"/>
+    <text x="300" y="97" font-size="12" font-weight="700" fill="#B93B2E" text-anchor="middle">外部が担える部分</text>
+    <text x="300" y="140" font-size="11.5" fill="var(--soft)" text-anchor="middle">総務に残る負荷</text>
+    <g font-size="10.5" fill="var(--soft)" text-anchor="middle">
+      <text x="55" y="166">1 測る</text><text x="128" y="166">2 目的</text>
+      <text x="200" y="166">3 決断</text><text x="272" y="166">4 分ける</text>
+      <text x="345" y="166">5 担当者</text><text x="417" y="166">6 説明</text>
+      <text x="490" y="166">7 追いかけ</text><text x="562" y="166">8 報告会</text>
+    </g>
+    <text x="20" y="196" font-size="12" fill="var(--soft)">区間3は終わらない。7と8を回し続ける仕組みが着地点。</text>
+  </svg>
+  <p></p><button class="go" id="s">距離を測る（約2分）</button>
+  ${CONFIG.mode==="kiosk"?`<p class="foot" style="margin-top:22px">お名前やご連絡先の入力はありません。結果はその場でQRコードからお持ち帰りいただけます。</p>`:""}`;
+  document.getElementById("s").onclick=()=>{
+    if(CONFIG.mode==="kiosk"){ phase="q"; qi=0; flow=["where"]; } else phase="lead";
+    render(); window.scrollTo(0,0);
+  };
+}
+
+function leadForm(){
+  app.innerHTML=`
+  <p class="qnum">診断のまえに</p>
+  <p class="qtext">お名前と会社名をご記入ください</p>
+  <p class="qnote">診断結果は、会社名・お名前を入れた形で書き出せます。</p>
+  <label class="fl" for="co">会社名<span>必須</span></label>
+  <input class="fi" id="co" type="text" autocomplete="organization" value="${esc(lead.company||"")}">
+  <label class="fl" for="nm">お名前<span>必須</span></label>
+  <input class="fi" id="nm" type="text" autocomplete="name" value="${esc(lead.name||"")}">
+  <p class="err" id="e" hidden></p>
+  <div style="margin-top:22px"><button class="go" id="s">診断をはじめる</button></div>
+  <div style="margin-top:14px"><button class="ghost" id="b">← 戻る</button></div>`;
+  const co=document.getElementById("co"),nm=document.getElementById("nm"),e=document.getElementById("e");
+  [co,nm].forEach(el=>el.oninput=()=>{el.classList.remove("bad");e.hidden=true;});
+  document.getElementById("s").onclick=()=>{
+    const c=co.value.trim(),n=nm.value.trim();
+    co.classList.toggle("bad",!c); nm.classList.toggle("bad",!n);
+    if(!c||!n){e.textContent="会社名とお名前をご記入ください";e.hidden=false;(c?nm:co).focus();return;}
+    lead.company=c; lead.name=n; phase="q"; qi=0; flow=["where"]; render(); window.scrollTo(0,0);
+  };
+  document.getElementById("b").onclick=()=>{phase="hero";render();};
+}
+
+function advance(q,opt){
+  if(q.gate){                                   // 関門の設問
+    if(opt.pass && q.gate<8) flow.push("g"+(q.gate+1));
+    else flow.push("why");
+  }
+  else if(q.id==="where") flow.push("g1");
+  else if(q.id==="why")   flow.push("goal");
+  qi++;
+  if(qi>=flow.length) phase=(CONFIG.mode==="kiosk")?"result":(CONFIG.gateBeforeResult?"gate":"result");
+}
+
+function question(){
+  const q=QMAP[flow[qi]];
+  app.innerHTML=`
+  <p class="qnum">質問 ${qi+1}${q.gate?`　／　ステップ${q.gate}の確認`:""}</p>
+  <p class="qtext">${q.q}</p>
+  ${q.note?`<p class="qnote">${q.note}</p>`:""}
+  ${q.opts.map((o,i)=>`<button class="opt" data-i="${i}">${o.t}</button>`).join("")}
+  <div style="margin-top:16px"><button class="ghost" id="b">← 戻る</button></div>`;
+  document.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i, o=q.opts[i];
+    if(q.gate) gateAns[q.gate]=i; else ans[q.id]=o.v;
+    flow.length=qi+1;
+    for(let n=1;n<=8;n++) if(!flow.includes("g"+n)) delete gateAns[n];
+    advance(q,o);
+    render(); window.scrollTo(0,0);
+  });
+  document.getElementById("b").onclick=()=>{
+    if(qi>0){ qi--; flow.length=qi+1;
+      for(let n=1;n<=8;n++) if(!flow.includes("g"+n)) delete gateAns[n];
+    } else phase=(CONFIG.mode==="kiosk")?"hero":"lead";
+    render();
+  };
+}
+
+function gate(){
+  app.innerHTML=`
+  <p class="qnum">診断が完了しました</p>
+  <p class="qtext">結果の送付先をご記入ください</p>
+  <label class="fl" for="ml">メールアドレス<span>必須</span></label>
+  <input class="fi" id="ml" type="email" inputmode="email" autocomplete="email" value="${esc(lead.email||"")}">
+  <p class="err" id="e" hidden></p>
+  <div class="use"><b>ご記入いただいた情報の使いみち</b>
+    ①診断結果および関連資料の送付　②ペーパーレス化に関するご案内　の2点に限って使用します。第三者への提供は行いません。</div>
+  <label class="agree"><input type="checkbox" id="ag">
+    <span>上記の利用目的と<a href="${CONFIG.privacyUrl}" target="_blank" rel="noopener">プライバシーポリシー</a>に同意します</span></label>
+  <button class="go" id="s">結果を見る</button>
+  <div style="margin-top:14px"><button class="ghost" id="b">← 戻る</button></div>`;
+  const ml=document.getElementById("ml"),ag=document.getElementById("ag"),e=document.getElementById("e");
+  ml.oninput=()=>{ml.classList.remove("bad");e.hidden=true;}; ag.onchange=()=>{e.hidden=true;};
+  document.getElementById("s").onclick=async()=>{
+    const v=ml.value.trim();
+    if(!validMail(v)){ml.classList.add("bad");e.textContent="メールアドレスの形式をご確認ください";e.hidden=false;return;}
+    if(!ag.checked){e.textContent="利用目的への同意にチェックをお願いします";e.hidden=false;return;}
+    lead.email=v;
+    const j=judge();
+    await submitLead({company:lead.company,name:lead.name,email:lead.email,
+      answers:{...ans},gates:{...gateAns},cleared:j.cleared,gateAt:j.gateAt,
+      at:new Date().toISOString()});
+    phase="result"; render(); window.scrollTo(0,0);
+  };
+  document.getElementById("b").onclick=()=>{phase="q";qi=flow.length-1;render();};
+}
+
+function routeSVG(j){
+  const XS=[56,124,192,266,334,402,478,556], YS=[190,172,178,154,160,136,124,102];
+  const col=["var(--z1)","var(--z2)","var(--z3)"];
+  let path="",dots="";
+  for(let i=0;i<7;i++){
+    const on=(i+1)<j.cleared;
+    path+=`<line x1="${XS[i]}" y1="${YS[i]}" x2="${XS[i+1]}" y2="${YS[i+1]}" stroke="${on?"var(--ink)":"var(--rule)"}" stroke-width="${on?5:4}" stroke-linecap="round" ${on?"":'stroke-dasharray="2 7"'}/>`;
+  }
+  STEPS.forEach((s,i)=>{
+    const c=col[s.z], n=i+1;
+    if(n<=j.cleared) dots+=`<circle cx="${XS[i]}" cy="${YS[i]}" r="8" fill="${c}" stroke="var(--card)" stroke-width="2"/>`;
+    else if(n===j.gateAt) dots+=`<circle cx="${XS[i]}" cy="${YS[i]}" r="14" fill="none" stroke="var(--seal)" stroke-width="3"/><circle cx="${XS[i]}" cy="${YS[i]}" r="5" fill="var(--seal)"/>`;
+    else dots+=`<circle cx="${XS[i]}" cy="${YS[i]}" r="7" fill="var(--card)" stroke="var(--rule)" stroke-width="1.5"/>`;
+    dots+=`<text x="${XS[i]}" y="${YS[i]+28}" font-size="11" fill="var(--soft)" text-anchor="middle">${n}</text>`;
+  });
+  return `<svg viewBox="0 0 620 236" role="img" aria-label="8ステップのルートマップ">
+    <rect x="30" y="60" width="214" height="20" fill="var(--z1)" opacity=".13"/>
+    <rect x="252" y="60" width="214" height="20" fill="var(--z2)" opacity=".13"/>
+    <rect x="474" y="60" width="128" height="20" fill="var(--z3)" opacity=".13"/>
+    <text x="137" y="75" font-size="12" fill="var(--ink)" text-anchor="middle">区間1　決める</text>
+    <text x="359" y="75" font-size="12" fill="var(--ink)" text-anchor="middle">区間2　固める</text>
+    <text x="538" y="75" font-size="12" fill="var(--ink)" text-anchor="middle">区間3　回す</text>
+    ${path}${dots}
+    <circle cx="590" cy="92" r="17" fill="none" stroke="var(--z3)" stroke-width="2"/>
+    <path d="M590 75 L599 81 L590 87 Z" fill="var(--z3)"/>
+    <text x="590" y="127" font-size="11" fill="var(--z3)" text-anchor="middle">回し続ける</text>
+    <text x="30" y="222" font-size="12" fill="var(--soft)">${j.cleared} / 8 ステップ通過</text>
+    ${j.gateAt?`<text x="${XS[j.gateAt-1]}" y="${YS[j.gateAt-1]-24}" font-size="11" font-weight="700" fill="var(--seal)" text-anchor="middle">最初の関門</text>`:""}
+  </svg>`;
+}
+
+function memoText(j){
+  const p=PURPOSE[ans.why], g=GOAL[ans.goal], w=WHERE[ans.where];
+  const road=STEPS.map(s=>{
+    const mark = s.n<=j.cleared?"［通過］" : s.n===j.gateAt?"［関門］" : "［未確認］";
+    return `${mark} ${s.n}. ${s.t}`;
+  }).join("\n");
+  return `【ペーパーレス化の進め方について】
+
+■ 現在地
+全8ステップのうち、${j.completed?"8つすべてを通過しています。":`ステップ${j.gateAt}が最初の関門です。ここから残り${j.left}ステップ。`}
+
+■ 道のり全体
+${road}
+
+■ ${j.completed?"いまの状態":`ステップ${j.gateAt}について`}
+${j.completed?"部門推進と成果報告会が回っている状態です。完全ペーパーレスという終点に着くのではなく、更新され続ける仕組みが残ることが着地点になります。":j.choice.note}
+
+■ 前提の確認
+社内で語られている目的：${p.l}
+目指す状態：${g.l}
+${g.n}
+紙が多い場所：${w.l}（${w.a}）
+
+■ 外部を使える部分
+${ZONES.map(z=>`${z.n}：${z.ex}`).join("\n")}
+
+※ 重い工程は決まっています。全部門の紙を測ること（1）、残す文書と減らす文書を分けること（4）、部門ごとの進捗を追いかけること（7）。ここは外部の調査・設計を使うと総務の負荷が下がります。一方で、目的とゴールの決定（2）と実施の決断（3）は社内でしか行えません。`;
+}
+
+function result(){
+  const j=judge();
+  const p=PURPOSE[ans.why], g=GOAL[ans.goal], w=WHERE[ans.where];
+  const today=new Date().toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric"});
+
+  app.innerHTML=`
+  ${lead.name?`<p class="who">${esc(lead.company||"")}　${esc(lead.name||"")} 様　／　${today}</p>`:`<p class="who">${today}</p>`}
+  ${j.completed
+    ? `<div class="dist"><b>関門なし</b><span>8ステップすべて通過</span></div>
+       <p class="rtype">仕組みが回っている状態です</p>
+       <p class="rsub">部門推進と成果報告会が動いています。ここから先は、対象を広げながら方針を更新していく段階です。</p>`
+    : `<div class="dist"><b>あと${j.left}ステップ</b><span>最初の関門はステップ${j.gateAt}</span></div>
+       <p class="rtype">${STEPS[j.gateAt-1].t}</p>
+       <p class="rsub">${STEPS[j.gateAt-1].l}</p>`}
+  ${routeSVG(j)}
+  <div class="verdict"><p>${j.completed
+    ? "完全ペーパーレスという終点に着くのではなく、更新され続ける仕組みが残ることが着地点です。7と8を回し続けてください。"
+    : j.choice.note}</p></div>
+
+  ${j.gateAt===3?`<div class="alt"><b>決断が得られない場合の代替策</b>
+    全社展開の前に、一業務だけ紙なしで回して実績をつくる方法があります。順路としては遠回りですが、決断を引き出す材料になります。トップの決断さえあれば、部門展開の方が速く進みます。</div>`:""}
+
+  <h2 class="sec">道のり全体</h2>
+  ${ZONES.map(z=>{
+    const list=STEPS.filter(s=>s.n>=z.from&&s.n<=z.to);
+    const d=list.filter(s=>s.n<=j.cleared).length;
+    return `<div class="zone">
+      <div class="zhead"><span class="zdot" style="background:${z.c}"></span>${z.n}<span class="zcount">${d} / ${list.length} 通過</span></div>
+      ${list.map(s=>{
+        const st = s.n<=j.cleared?"ok" : s.n===j.gateAt?"now" : "";
+        const mk = s.n<=j.cleared?"済" : s.n;
+        return `<div class="li ${st}"><span class="n">${mk}</span><span>${s.t}${s.n===j.gateAt?"　← 最初の関門":""}</span></div>`;
+      }).join("")}
+      <p class="zex">外部が担える部分　${z.ex}</p>
+    </div>`;}).join("")}
+
+  <h2 class="sec">前提の確認</h2>
+  <div class="card">
+    <p class="ct">目指す状態は「${g.l}」</p>
+    <p class="cb">${g.n}</p>
+    <p class="chk"><b>社内で語られている目的</b>　${p.l}。${p.f}が必要です。</p>
+  </div>
+
+  <h2 class="sec">上申用メモ</h2>
+  <textarea class="memo" id="m" readonly>${memoText(j)}</textarea>
+
+  ${(CONFIG.mode==="kiosk"&&!fromPhone)?`
+  <h2 class="sec">結果をお持ち帰りください</h2>
+  <div class="qrbox">
+    <div class="qrimg">${QR.qrSVG(resultUrl(),200)}</div>
+    <div class="qrtxt">
+      <p class="qrlead">スマートフォンのカメラで読み取ると、この結果をそのままご覧いただけます。</p>
+      <p class="qrnote">読み取りに個人情報の入力は必要ありません。結果はこのQRコードの中に入っています。</p>
+      <p class="qrcard">調査についてのご説明をご希望の方は、スタッフに名刺をお渡しください。</p>
+    </div>
+  </div>
+  ${urlWarning()?`<p class="warn"><b>設定の確認が必要です</b>${urlWarning()}<br>読み取り先：${esc(baseUrl())}</p>`:""}
+  <div class="row"><button class="dl" id="a">次の方へ（結果を消す）</button></div>`:`
+  <h2 class="sec">結果の保存</h2>
+  <div class="row">
+    <button class="dl" id="dl">診断結果をダウンロード</button>
+    <button class="ghost" id="pr">印刷 / PDFで保存</button>
+    <button class="ghost" id="c">メモをコピー</button>
+    <span class="copied" id="d" hidden>コピーしました</span>
+    <button class="ghost" id="a">${fromPhone?"自分でも診断してみる":"もう一度診断する"}</button>
+  </div>`}
+  <p class="foot">この診断は、進み具合の採点ではなく、最初に止まっている関門を特定するものです。関門より先のステップは未確認として扱っています。</p>
+  ${(CONFIG.mode==="kiosk"&&!fromPhone)?`<p class="foot" style="margin-top:10px">この画面は、しばらく操作がないと自動的に最初に戻ります。</p>`:""}`;
+
+  const $=id=>document.getElementById(id);
+  if($("pr")) $("pr").onclick=()=>window.print();
+  if($("dl")) $("dl").onclick=()=>{
+    const doc=`<!doctype html><meta charset="utf-8"><title>ペーパーレス診断結果</title>
+<style>body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;color:#22312B;line-height:1.8;max-width:720px;margin:0 auto;padding:40px 24px}
+h1{font-size:26px;margin:0 0 6px}h2{font-size:14px;margin:32px 0 10px;padding-bottom:6px;border-bottom:1px solid #CBD3C8}
+.who{font-size:13px;color:#6E7F76;border-bottom:1px solid #CBD3C8;padding-bottom:10px;margin-bottom:20px}
+.big{font-size:40px;color:#B93B2E;font-weight:700;margin:0}.sub{font-size:14px;color:#6E7F76;margin:0 0 18px}
+.li{font-size:14px;margin:3px 0}pre{white-space:pre-wrap;background:#F4F6F2;border:1px solid #CBD3C8;padding:16px;font-family:inherit;font-size:13px}
+svg{width:100%;height:auto}</style>
+<h1>ペーパーレスへの最短距離　診断結果</h1>
+<p class="who">${esc(lead.company||"")}　${esc(lead.name||"")}　${today}</p>
+<p class="big">${j.completed?"関門なし":"あと"+j.left+"ステップ"}</p>
+<p class="sub">${j.completed?"8ステップすべて通過":"最初の関門はステップ"+j.gateAt+"　"+STEPS[j.gateAt-1].t}</p>
+${routeSVG(j)}
+<h2>上申用メモ</h2><pre>${esc(memoText(j))}</pre>`;
+    const url=URL.createObjectURL(new Blob([doc],{type:"text/html;charset=utf-8"}));
+    const a=document.createElement("a"); a.href=url;
+    a.download=`ペーパーレス診断_${(lead.company||"結果").replace(/[\\/:*?"<>|]/g,"")}_${new Date().toISOString().slice(0,10)}.html`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  };
+  if($("c")) $("c").onclick=async()=>{
+    const el=$("m");
+    try{await navigator.clipboard.writeText(el.value);}
+    catch(e){el.removeAttribute("readonly");el.select();document.execCommand("copy");el.setAttribute("readonly","");}
+    $("d").hidden=false;
+  };
+  $("a").onclick=()=>{ if(fromPhone){fromPhone=false;location.hash="";} reset(); };
+  armIdle(); app.onclick=armIdle;
+}
+
+boot();
+</script>
