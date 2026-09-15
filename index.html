@@ -455,7 +455,18 @@ const GATES=[
   ]}
 ];
 
-const QMAP={
+/* ===== 共通設問（全員に聞く）=================================== */
+const COMMON={
+  scale:{id:"scale",q:"事業所と部門の数はどのくらいですか？",
+    opts:[{t:"1拠点・10部門未満",v:"s"},
+          {t:"1拠点・10部門以上",v:"m"},
+          {t:"複数拠点（3拠点未満）",v:"l"},
+          {t:"複数拠点（3拠点以上）",v:"x"}]},
+  store:{id:"store",q:"書庫や外部倉庫を使っていますか？",
+    opts:[{t:"社内の書庫と外部倉庫の両方",v:"both"},
+          {t:"社内の書庫のみ",v:"in"},
+          {t:"各部門のキャビネットに分散",v:"cab"},
+          {t:"把握していない",v:"unk"}]},
   where:{id:"where",q:"紙がいちばん多く残っているのはどこですか？",
     opts:[{t:"社内の申請・承認（押印を含む）",v:"approval"},
           {t:"顧客・取引先とのやり取り（契約書・請求書など）",v:"external"},
@@ -473,7 +484,201 @@ const QMAP={
           {t:"特定の業務から紙を外せれば十分",v:"partial"},
           {t:"決めていない",v:"undef"}]}
 };
+
+/* ===== 関門ごとの深掘り設問 =====================================
+   止まった関門についてのみ2問を追加で聞く。
+   各選択肢の note が、結果画面の「なぜ止まっているか」になる。
+   ================================================================ */
+const DEEP={
+ 1:[
+  {id:"d1a",q:"紙の量を把握しようとしたことはありますか？",
+   opts:[
+    {t:"試したが、部門の協力が得られず途中で止まった",
+     note:"手段ではなく、権限の問題です。部門に協力を求める根拠が総務にないと、調査は必ず途中で止まります。調査の前に、経営から一言出してもらう必要があります。"},
+    {t:"試したが、数え方が分からず形にならなかった",
+     note:"数え方の設計が要ります。棚の長さで測るのか、箱の数で測るのか、文書の種類ごとに分けるのか。基準が決まっていないと、集めた数字を部門間で比較できません。"},
+    {t:"必要性は感じているが、着手できていない",
+     note:"通常業務と並行して全部門を回るのは、現実的に難しい工程です。着手できないこと自体が問題なのではなく、総務の手だけでやろうとしている構図に無理があります。"},
+    {t:"特に必要と思っていなかった",
+     note:"ここが出発点になります。数字がないまま進めると、削減方針が全社一律になり、紙の多い部門にも少ない部門にも合わない目標ができあがります。"}
+   ]},
+  {id:"d1b",q:"いま紙が増え続けている実感はありますか？",
+   opts:[
+    {t:"増えている。保管場所が足りない",
+     note:"保管場所の逼迫は、経営に話を通しやすい材料です。増加のペースを数字にできれば、放置した場合の見通しとして示せます。"},
+    {t:"横ばいだが、減ってもいない",
+     note:"横ばいは、捨てる量と増える量が釣り合っている状態です。保存年限の棚卸しをすると、まとまった量が一度に減る可能性があります。"},
+    {t:"減ってはいるが、遅い",
+     note:"減り始めているなら、現場の意識は動いています。速度が出ない原因は、たいてい判断基準が現場任せになっていることです。"},
+    {t:"分からない",
+     note:"増減が分からない状態では、施策の効果も測れません。まず一度、基準となる数字を取るところからです。"}
+   ]}],
+ 2:[
+  {id:"d2a",q:"目的を決めようとしたとき、何が障害になっていますか？",
+   opts:[
+    {t:"関係部署で言い分が違い、まとまらない",
+     note:"総論賛成・各論反対の典型です。目的を一つに絞る決定は、部署間の調整では出ません。経営が決める性質のものです。"},
+    {t:"効果が数字で示せないので、説得力が出ない",
+     note:"目的が決まらない原因が、実は現状把握の不足にあるパターンです。いまの紙の量とコストが分かれば、目的は自然に絞れます。"},
+    {t:"何を目的にすべきかの判断材料がない",
+     note:"コスト・法令リスク・働き方のどれを主目的にするかは、自社のどこに痛みがあるかで決まります。痛みの所在を数字で見ることが先です。"},
+    {t:"日々の業務に追われ、考える時間がない",
+     note:"時間の問題に見えますが、多くの場合は優先順位の問題です。経営の議題に載っていないため、後回しにできてしまう構造になっています。"}
+   ]},
+  {id:"d2b",q:"ペーパーレス化について、社内で議論した場はありますか？",
+   opts:[
+    {t:"経営会議で議題になったことがある",
+     note:"一度議題に上がっているなら、再提出の道筋はあります。前回なぜ決まらなかったかを整理すると、次の提案が通りやすくなります。"},
+    {t:"部門長クラスで話したことがある",
+     note:"現場レベルの合意はつくれています。あとは、それを経営の決定に引き上げる段取りです。"},
+    {t:"総務内でだけ話している",
+     note:"総務内の検討は、社内では存在しないのと同じです。まず外に出す場をつくることが先になります。"},
+    {t:"まだどこでも議論していない",
+     note:"議論の場がないこと自体が最初の関門です。資料の完成度より、話題として一度出すことを優先してください。"}
+   ]}],
+ 3:[
+  {id:"d3a",q:"決裁の場に、この話を持ち込んだことはありますか？",
+   opts:[
+    {t:"提案したが、優先順位が低いと判断された",
+     note:"他の投資と比べられて負けた状態です。金額や期間より、放置した場合に何が起きるかを示す方が効くことがあります。"},
+    {t:"提案したが、判断材料が足りないと言われた",
+     note:"経営は判断したいが、材料がないという状態です。部門ごとの収納量とコストの数字が、そのまま不足している材料にあたります。"},
+    {t:"提案の機会をうかがっている",
+     note:"完璧な資料を待つほど、機会は遠のきます。議題に載せること自体が目的だと割り切ると、動き出しやすくなります。"},
+    {t:"提案したことはない",
+     note:"施策の検討より先に、決める場に持ち込むことです。差し戻されても、そこで論点が確定します。"}
+   ]},
+  {id:"d3b",q:"経営層が最も関心を持ちそうなのはどれですか？",
+   opts:[
+    {t:"賃料・保管コストの削減",
+     note:"保管面積と賃料を結びつけると、経営の言葉になります。書庫の面積が何坪で、年間いくらかを出すのが近道です。"},
+    {t:"法令対応の遅れによるリスク",
+     note:"対応しなかった場合に何が起きるかを具体的に示せると、優先順位が上がります。期限のある話は決裁が通りやすい性質があります。"},
+    {t:"業務効率や人手不足への対応",
+     note:"人手不足と結びつけると、コスト削減より強い動機になります。どの業務に何時間かかっているかを部署名つきで出してください。"},
+    {t:"事業継続やセキュリティ",
+     note:"災害時の文書消失や情報漏洩の観点は、経営の関心が高い領域です。紙のまま残っている重要文書の所在が論点になります。"}
+   ]}],
+ 4:[
+  {id:"d4a",q:"いまの文書規程は、いつ作られたものですか？",
+   opts:[
+    {t:"5年以内に見直している",
+     note:"比較的新しい規程です。それでも紙が減らないなら、規程の内容ではなく運用の側に原因があります。"},
+    {t:"10年以上前のまま",
+     note:"電子帳簿保存法の改正前につくられた可能性が高い規程です。電子で保存してよい文書が、紙のまま残る前提になっていることがあります。"},
+    {t:"作られた時期が分からない",
+     note:"誰も内容を把握していない規程は、実質的に機能しません。現行の運用と照らし合わせるところからになります。"},
+    {t:"規程自体がない",
+     note:"判断が部門任せになり、残す量が人によって変わります。基準をつくること自体が削減につながります。"}
+   ]},
+  {id:"d4b",q:"規程どおりにしても紙が減らない原因に、心当たりはありますか？",
+   opts:[
+    {t:"法定年限より長く保管する慣習がある",
+     note:"最も多い原因です。念のため残すという判断が積み重なると、法定年限を守っても紙は減りません。誰の判断で延長しているかを特定してください。"},
+    {t:"電子化してよい文書の線引きが曖昧",
+     note:"線引きがないと、現場は安全側に倒して紙を残します。電子化してよい文書を明示する方が、減らす指示より効きます。"},
+    {t:"部門ごとに独自の運用をしている",
+     note:"規程が一つでも、運用が部門ごとに分かれていると効果が出ません。部門間の差を数字で見ると、どこに手を入れるべきかが分かります。"},
+    {t:"原因が分からない",
+     note:"原因が見えないのは、部門ごとの保管実態が把握できていないためです。どの部門のどの文書が減っていないかを切り分ける必要があります。"}
+   ]}],
+ 5:[
+  {id:"d5a",q:"担当者を立てるうえで、障害になっているのは何ですか？",
+   opts:[
+    {t:"部門に余力がなく、引き受け手がいない",
+     note:"業務として認められていないため、負担増としか見えていない状態です。役割を正式に位置づけることで変わります。"},
+    {t:"誰に頼めばよいか分からない",
+     note:"文書を最も多く扱っている部門から選ぶのが基本です。部門ごとの紙の量が分かれば、人選の根拠にもなります。"},
+    {t:"頼んだが、実質的に動いていない",
+     note:"名前だけの担当者になっています。何をいつまでにやるかが決まっていないことが原因であることが多いです。"},
+    {t:"総務だけで進められると思っていた",
+     note:"部門の文書は部門でしか判断できません。総務が代わりに捨てる判断をするのは、現実的に不可能です。"}
+   ]},
+  {id:"d5b",q:"部門側のペーパーレス化への反応はどうですか？",
+   opts:[
+    {t:"おおむね協力的",
+     note:"進めやすい状態です。協力が得られているうちに、担当者を正式に決めてください。"},
+    {t:"関心はあるが、忙しくて手が回らない",
+     note:"優先順位の問題です。経営から明確に指示が出ているかどうかで、この反応は変わります。"},
+    {t:"紙がないと困るという声が強い",
+     note:"具体的にどの業務で困るのかを聞き出すと、多くは代替手段で解決できます。漠然とした不安のまま議論しないことが重要です。"},
+    {t:"関心が薄く、他人事になっている",
+     note:"目的が伝わっていない状態です。全社説明の前に、まず部門長に個別で話す方が早いことがあります。"}
+   ]}],
+ 6:[
+  {id:"d6a",q:"全社説明を行ううえで、障害になっているのは何ですか？",
+   opts:[
+    {t:"説明する場を設定できない",
+     note:"全社集会や朝礼など、既存の場に乗せるのが現実的です。新しく場をつくろうとすると時間がかかります。"},
+    {t:"経営から話してもらう段取りがつかない",
+     note:"ここが要点です。総務が説明すると依頼になり、経営が話すと決定になります。5分でも構わないので時間を取ってください。"},
+    {t:"説明する内容が固まっていない",
+     note:"目的の一文と、対象となる文書の範囲、そして期限。この3つが決まっていれば説明はできます。"},
+    {t:"説明の必要性を感じていなかった",
+     note:"通知だけで進めると、部門は作業指示としてしか受け取りません。目的が伝わらないまま進むと、途中で止まります。"}
+   ]},
+  {id:"d6b",q:"これまで社内にはどう伝えてきましたか？",
+   opts:[
+    {t:"通達やメールで周知した",
+     note:"周知と説明は別物です。読まれていない前提で組み直す必要があります。"},
+    {t:"部門長に伝え、各部門に展開してもらった",
+     note:"伝言の過程で目的が抜け落ちやすい形です。目的だけは全社員が直接聞く形にしてください。"},
+    {t:"担当者にだけ伝えている",
+     note:"担当者が孤立します。周囲が知らないと、協力を求めるたびに一から説明することになります。"},
+    {t:"まだ何も伝えていない",
+     note:"方針が固まっているなら、次はここです。決めた一文をそのまま使ってください。"}
+   ]}],
+ 7:[
+  {id:"d7a",q:"部門ごとの進捗が見えない原因は何だと思いますか？",
+   opts:[
+    {t:"報告の頻度や様式が決まっていない",
+     note:"決めるだけで解決します。月1回、決まった様式で出してもらうだけで、追いかける手間がなくなります。"},
+    {t:"何を進捗とするかが曖昧",
+     note:"削減した箱の数、電子化した文書の種類など、数えられるものを指標にしてください。感覚的な報告は比較できません。"},
+    {t:"部門が報告してくれない",
+     note:"報告が業務として位置づけられていない状態です。経営への報告に含まれると分かれば、優先順位が変わります。"},
+    {t:"総務側に集計する余力がない",
+     note:"集める形式を揃えると集計の負荷は大きく下がります。自由記述で集めていると、まとめるだけで時間が消えます。"}
+   ]},
+  {id:"d7b",q:"部門ごとの進み方に差は出ていますか？",
+   opts:[
+    {t:"大きな差が出ている",
+     note:"進んでいる部門のやり方を、そのまま他部門に渡すのが近道です。差の理由を特定すると横展開できます。"},
+    {t:"多少の差はあるが、おおむね同じ",
+     note:"安定して進んでいる状態です。このまま報告の仕組みを整えれば、成果報告会につなげられます。"},
+    {t:"どこも進んでいない",
+     note:"方針か担当者か、どちらかが機能していない可能性があります。一つ前の関門に戻って確認してください。"},
+    {t:"差があるかどうか分からない",
+     note:"比較できる数字がない状態です。部門ごとの削減量を同じ単位で集めるところからになります。"}
+   ]}],
+ 8:[
+  {id:"d8a",q:"成果を共有する場をつくるうえで、障害になっているのは何ですか？",
+   opts:[
+    {t:"報告できるほどの成果が出ていない",
+     note:"完成した成果を待つ必要はありません。途中経過の共有が、次の部門を動かす材料になります。"},
+    {t:"場を設定する余力がない",
+     note:"既存の会議に15分だけ枠をもらう形で十分です。単独の報告会にすると準備の負荷が上がります。"},
+    {t:"成果を数字で示せない",
+     note:"削減した箱の数や空いた棚の長さなど、目に見えるものを使ってください。金額換算は後からでも構いません。"},
+    {t:"必要性を感じていなかった",
+     note:"報告会がないと、取り組みは自然に止まります。続ける仕組みとして必要な工程です。"}
+   ]},
+  {id:"d8b",q:"この取り組みを今後も続けていく見通しはありますか？",
+   opts:[
+    {t:"継続的な取り組みとして位置づけている",
+     note:"理想的な状態です。方針を定期的に見直す前提で、報告会を回してください。"},
+    {t:"一区切りついたら終わりだと思っている",
+     note:"紙は放っておくと再び増えます。終わらせる取り組みではなく、続ける仕組みとして残すことが必要です。"},
+    {t:"担当者が変わると止まりそう",
+     note:"個人に紐づいている状態です。様式と頻度を決めておくと、引き継ぎが可能になります。"},
+    {t:"分からない",
+     note:"続ける前提が共有されていないと、成果が出た時点で自然に終わります。位置づけを明確にしてください。"}
+   ]}]
+};
+
+const QMAP=Object.assign({}, COMMON);
 GATES.forEach(g=>QMAP["g"+g.n]={id:"g"+g.n,q:g.q,note:g.note,opts:g.opts,gate:g.n});
+Object.keys(DEEP).forEach(n=>DEEP[n].forEach(d=>{ QMAP[d.id]={id:d.id,q:d.q,opts:d.opts,deep:+n}; }));
 
 
 const ZONES=[
@@ -489,6 +694,16 @@ const GOAL={zero:{l:"完全ペーパーレス",n:"紙をゼロにする前提は
   stockless:{l:"ペーパーストックレス",n:"現実的で、成果も測りやすいゴールです。方針づくりの議論も具体的になります。"},
   partial:{l:"業務単位の部分適用",n:"範囲が明確で、合意を取りやすい設定です。ここで実績を出し、次の対象へ広げてください。"},
   undef:{l:"未定",n:"ここが決まらない限り、何を導入しても評価ができません。最初の一手はツール比較ではなく、ゴールの言語化です。"}};
+const SCALE={
+  s:{l:"1拠点・10部門未満",n:"部門数が限られているため、全部門の実態把握は現実的な範囲です。"},
+  m:{l:"1拠点・10部門以上",n:"部門数が多く、総務だけで全部門を回るには相応の時間がかかります。"},
+  l:{l:"複数拠点（3拠点未満）",n:"拠点をまたぐため、移動を伴う調査になります。拠点ごとの差も出やすい規模です。"},
+  x:{l:"複数拠点（3拠点以上）",n:"総務が全拠点の紙を自力で測るのは、実務上ほぼ不可能な規模です。拠点間の基準統一も課題になります。"}};
+const STORE={
+  both:{l:"社内書庫と外部倉庫の両方",n:"外部倉庫の費用は、そのまま経営に示せる数字になります。年間の保管料を確認してください。"},
+  in:{l:"社内書庫のみ",n:"書庫の面積を賃料に換算すると、経営の言葉になります。"},
+  cab:{l:"各部門のキャビネットに分散",n:"分散していると総量が見えません。部門ごとに測らないと実態がつかめない状態です。"},
+  unk:{l:"把握していない",n:"どこに何があるか分からない状態です。所在の把握が、削減より先に必要になります。"}};
 const WHERE={approval:{l:"社内の申請・承認",a:"承認を伴う文書が中心になります"},
   external:{l:"取引先とのやり取り",a:"相手のある文書なので、社内方針を固めてから当たります"},
   archive:{l:"過去分の保管",a:"保存年限の棚卸しが、そのまま保管方針になります"},
@@ -539,18 +754,25 @@ function qrSVGBest(text,size){
 const C_WHY={cost:"c",risk:"r",work:"w",none:"n"}, C_GOAL={zero:"z",stockless:"s",partial:"p",undef:"u"},
       C_WHERE={approval:"a",external:"e",archive:"v",all:"l"};
 const rev=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[v,k]));
+const C_SCALE={s:"s",m:"m",l:"l",x:"x"}, C_STORE={both:"b",in:"i",cab:"c",unk:"u"};
 function encodeAns(){
   let g="";
   for(let n=1;n<=8;n++){ if(gateAns[n]===undefined) break; g+=String(gateAns[n]); }
-  return C_WHERE[ans.where]+C_WHY[ans.why]+C_GOAL[ans.goal]+g;
+  const n=lastDeep();
+  let d="";
+  if(n) d=DEEP[n].map(x=>deepAns[x.id]===undefined?"":String(deepAns[x.id])).join("");
+  return C_SCALE[ans.scale]+C_STORE[ans.store]+C_WHERE[ans.where]+C_WHY[ans.why]+C_GOAL[ans.goal]
+         +g+(d?"-"+d:"");
 }
 function decodeAns(code){
-  if(!/^[a-z]{3}[0-3]{0,8}$/.test(code)) return null;
-  const w=rev(C_WHERE)[code[0]], y=rev(C_WHY)[code[1]], g=rev(C_GOAL)[code[2]];
-  if(!w||!y||!g) return null;
+  const m=code.match(/^([a-z]{5})([0-3]{0,8})(?:-([0-3]{0,2}))?$/);
+  if(!m) return null;
+  const sc=rev(C_SCALE)[m[1][0]], st=rev(C_STORE)[m[1][1]], w=rev(C_WHERE)[m[1][2]],
+        y=rev(C_WHY)[m[1][3]], g=rev(C_GOAL)[m[1][4]];
+  if(!sc||!st||!w||!y||!g) return null;
   const ga={};
-  for(let i=3;i<code.length;i++) ga[i-2]=+code[i];
-  return {ans:{where:w,why:y,goal:g}, gateAns:ga};
+  for(let i=0;i<m[2].length;i++) ga[i+1]=+m[2][i];
+  return {ans:{scale:sc,store:st,where:w,why:y,goal:g}, gateAns:ga, deepRaw:m[3]||""};
 }
 function baseUrl(){
   const set=(CONFIG.publicUrl||"").trim();
@@ -560,18 +782,19 @@ function baseUrl(){
 function resultUrl(){ return baseUrl()+"#r="+encodeAns(); }
 function urlWarning(){
   const b=baseUrl();
+  if(!/^https?:\/\//i.test(b))
+    return "このページのURLがWeb上の住所になっていません（プレビュー表示やファイル直開きの可能性があります）。QRを読み取るには、公開したURLで表示してください。";
   if(/example\.com/i.test(b))
     return "設定の publicUrl が例示用のURLのままです。実際の公開URLに書き換えてください。";
-  if(/^file:/i.test(b))
-    return "このページをファイルとして直接開いています。QRを他の端末から読み取るには、サーバーに公開したURLで表示してください。";
-  if(/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(b))
+  if(/^https?:\/\/(localhost|127\.0\.0\.1|\[?::1)/i.test(b))
     return "URLが localhost になっています。会場の他の端末からは開けません。公開URLで表示してください。";
   return "";
 }
 
 /* ===== 状態 ==================================================== */
-let phase="hero", qi=0, flow=["where"], fromPhone=false, idleTimer=null;
-const ans={}, gateAns={}, lead={};
+const FLOW0=["scale","store","where"];
+let phase="hero", qi=0, flow=FLOW0.slice(), fromPhone=false, idleTimer=null;
+const ans={}, gateAns={}, deepAns={}, lead={};
 const app=document.getElementById("app");
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const validMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
@@ -591,10 +814,15 @@ function judge(){
 /* ===== 画面遷移 ================================================ */
 function boot(){
   loadQRLib();
-  const m=(location.hash||"").match(/r=([a-z]{3}[0-3]{0,8})/i);
+  const m=(location.hash||"").match(/r=([a-z]{5}[0-3]{0,8}(?:-[0-3]{0,2})?)/i);
   if(m){
     const d=decodeAns(m[1].toLowerCase());
-    if(d){ Object.assign(ans,d.ans); Object.assign(gateAns,d.gateAns); fromPhone=true; phase="result"; }
+    if(d){
+      Object.assign(ans,d.ans); Object.assign(gateAns,d.gateAns);
+      const n=lastDeep();
+      if(n&&d.deepRaw) DEEP[n].forEach((x,i)=>{ if(d.deepRaw[i]!==undefined) deepAns[x.id]=+d.deepRaw[i]; });
+      fromPhone=true; phase="result";
+    }
   }
   render();
 }
@@ -607,7 +835,8 @@ function reset(){
   clearTimeout(idleTimer);
   Object.keys(ans).forEach(k=>delete ans[k]);
   Object.keys(gateAns).forEach(k=>delete gateAns[k]);
-  phase="hero"; qi=0; flow=["where"]; render(); window.scrollTo(0,0);
+  Object.keys(deepAns).forEach(k=>delete deepAns[k]);
+  phase="hero"; qi=0; flow=FLOW0.slice(); render(); window.scrollTo(0,0);
 }
 function render(){
   if(phase==="hero") return hero();
@@ -648,7 +877,7 @@ function hero(){
   <p></p><button class="go" id="s">距離を測る（約2分）</button>
   ${CONFIG.mode==="kiosk"?`<p class="foot" style="margin-top:22px">お名前やご連絡先の入力はありません。結果はその場でQRコードからお持ち帰りいただけます。</p>`:""}`;
   document.getElementById("s").onclick=()=>{
-    if(CONFIG.mode==="kiosk"){ phase="q"; qi=0; flow=["where"]; } else phase="lead";
+    if(CONFIG.mode==="kiosk"){ phase="q"; qi=0; flow=FLOW0.slice(); } else phase="lead";
     render(); window.scrollTo(0,0);
   };
 }
@@ -671,16 +900,28 @@ function leadForm(){
     const c=co.value.trim(),n=nm.value.trim();
     co.classList.toggle("bad",!c); nm.classList.toggle("bad",!n);
     if(!c||!n){e.textContent="会社名とお名前をご記入ください";e.hidden=false;(c?nm:co).focus();return;}
-    lead.company=c; lead.name=n; phase="q"; qi=0; flow=["where"]; render(); window.scrollTo(0,0);
+    lead.company=c; lead.name=n; phase="q"; qi=0; flow=FLOW0.slice(); render(); window.scrollTo(0,0);
   };
   document.getElementById("b").onclick=()=>{phase="hero";render();};
 }
 
+function lastDeep(){
+  for(let n=8;n>=1;n--) if(gateAns[n]!==undefined && !GATES[n-1].opts[gateAns[n]].pass) return n;
+  return null;
+}
+
 function advance(q,opt){
-  if(q.gate){                                   // 関門の設問
-    if(opt.pass && q.gate<8) flow.push("g"+(q.gate+1));
-    else flow.push("why");
+  if(q.gate){                                      // 関門の設問
+    if(opt.pass) flow.push(q.gate<8 ? "g"+(q.gate+1) : "why");
+    else         flow.push(DEEP[q.gate][0].id);    // 止まった関門の深掘りへ
   }
+  else if(q.deep){                                 // 深掘りは1問ずつ進める
+    const list=DEEP[q.deep];
+    const idx=list.findIndex(d=>d.id===q.id);
+    flow.push(idx+1<list.length ? list[idx+1].id : "why");
+  }
+  else if(q.id==="scale") flow.push("store");
+  else if(q.id==="store") flow.push("where");
   else if(q.id==="where") flow.push("g1");
   else if(q.id==="why")   flow.push("goal");
   qi++;
@@ -697,15 +938,17 @@ function question(){
   <div style="margin-top:16px"><button class="ghost" id="b">← 戻る</button></div>`;
   document.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
     const i=+b.dataset.i, o=q.opts[i];
-    if(q.gate) gateAns[q.gate]=i; else ans[q.id]=o.v;
+    if(q.gate) gateAns[q.gate]=i; else if(q.deep) deepAns[q.id]=i; else ans[q.id]=o.v;
     flow.length=qi+1;
     for(let n=1;n<=8;n++) if(!flow.includes("g"+n)) delete gateAns[n];
+    Object.keys(deepAns).forEach(k=>{ if(!flow.includes(k)) delete deepAns[k]; });
     advance(q,o);
     render(); window.scrollTo(0,0);
   });
   document.getElementById("b").onclick=()=>{
     if(qi>0){ qi--; flow.length=qi+1;
       for(let n=1;n<=8;n++) if(!flow.includes("g"+n)) delete gateAns[n];
+      Object.keys(deepAns).forEach(k=>{ if(!flow.includes(k)) delete deepAns[k]; });
     } else phase=(CONFIG.mode==="kiosk")?"hero":"lead";
     render();
   };
@@ -733,7 +976,7 @@ function gate(){
     lead.email=v;
     const j=judge();
     await submitLead({company:lead.company,name:lead.name,email:lead.email,
-      answers:{...ans},gates:{...gateAns},cleared:j.cleared,gateAt:j.gateAt,
+      answers:{...ans},gates:{...gateAns},deep:{...deepAns},cleared:j.cleared,gateAt:j.gateAt,
       at:new Date().toISOString()});
     phase="result"; render(); window.scrollTo(0,0);
   };
@@ -788,7 +1031,12 @@ ${road}
 ■ ${j.completed?"いまの状態":`ステップ${j.gateAt}について`}
 ${j.completed?"部門推進と成果報告会が回っている状態です。完全ペーパーレスという終点に着くのではなく、更新され続ける仕組みが残ることが着地点になります。":j.choice.note}
 
+■ 止まっている理由
+${j.gateAt?DEEP[j.gateAt].filter(d=>deepAns[d.id]!==undefined).map(d=>{const o=d.opts[deepAns[d.id]];return `・${d.q}\n　→ ${o.t}\n　　${o.note}`;}).join("\n"):"（8つすべて通過）"}
+
 ■ 前提の確認
+規模：${SCALE[ans.scale].l}／保管：${STORE[ans.store].l}
+${SCALE[ans.scale].n}
 社内で語られている目的：${p.l}
 目指す状態：${g.l}
 ${g.n}
@@ -818,6 +1066,21 @@ function result(){
   <div class="verdict"><p>${j.completed
     ? "完全ペーパーレスという終点に着くのではなく、更新され続ける仕組みが残ることが着地点です。7と8を回し続けてください。"
     : j.choice.note}</p></div>
+
+  ${j.gateAt?`
+  <h2 class="sec">止まっている理由</h2>
+  ${DEEP[j.gateAt].filter(d=>deepAns[d.id]!==undefined).map(d=>{
+     const o=d.opts[deepAns[d.id]];
+     return `<div class="card">
+       <p class="ct">${o.t}</p>
+       <p class="cb">${o.note}</p></div>`;
+   }).join("")}`:""}
+
+  <h2 class="sec">規模から見た注意点</h2>
+  <div class="card">
+    <p class="ct">${SCALE[ans.scale].l}／${STORE[ans.store].l}</p>
+    <p class="cb">${SCALE[ans.scale].n}${STORE[ans.store].n}</p>
+  </div>
 
   ${j.gateAt===3?`<div class="alt"><b>決断が得られない場合の代替策</b>
     全社展開の前に、一業務だけ紙なしで回して実績をつくる方法があります。順路としては遠回りですが、決断を引き出す材料になります。トップの決断さえあれば、部門展開の方が速く進みます。</div>`:""}
@@ -849,7 +1112,7 @@ function result(){
   ${(CONFIG.mode==="kiosk"&&!fromPhone)?`
   <h2 class="sec">結果をお持ち帰りください</h2>
   <div class="qrbox">
-    <div class="qrimg">${qrSVGBest(resultUrl(),340)}</div>
+    <div class="qrimg">${urlWarning()?`<div style="width:340px;max-width:100%;aspect-ratio:1;border:2px dashed var(--seal);display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;color:var(--seal);font-size:14px;font-weight:700">QRは公開URLで表示したときに<br>生成されます</div>`:qrSVGBest(resultUrl(),340)}</div>
     <div class="qrtxt">
       <p class="qrlead">スマートフォンのカメラで読み取ると、この結果をそのままご覧いただけます。</p>
       <p class="qrnote">読み取りに個人情報の入力は必要ありません。結果はこのQRコードの中に入っています。</p>
