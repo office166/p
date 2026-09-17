@@ -40,6 +40,11 @@
   .qnote{font-size:13px;color:var(--soft);margin:0 0 18px}
   .opt{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--rule);padding:14px 16px;margin-bottom:9px;font-size:15px;line-height:1.5;color:var(--ink);cursor:pointer}
   .opt:hover{border-color:var(--ink);background:#fff}
+  .opt.multi{display:flex;align-items:center;gap:10px}
+  .opt.multi.on{border-color:var(--seal);background:#fff}
+  .chk2{flex:none;width:22px;height:22px;border:1.5px solid var(--rule);display:flex;align-items:center;
+        justify-content:center;font-size:13px;font-weight:700;color:var(--seal);line-height:1}
+  .opt.multi.on .chk2{border-color:var(--seal)}
   .fl{display:block;font-size:13px;font-weight:700;margin:16px 0 6px}
   .fl span{font-weight:400;color:var(--seal);font-size:12px;margin-left:6px}
   .fi{width:100%;background:#fff;border:1px solid var(--rule);padding:12px 14px;font-family:inherit;font-size:15px;color:var(--ink)}
@@ -57,6 +62,12 @@
   .rsub{font-size:14px;color:var(--soft);margin:0 0 6px}
   .verdict{border:1px solid var(--ink);border-left:5px solid var(--seal);background:#fff;padding:14px 16px;margin:18px 0}
   .verdict p{margin:0;font-size:15px}
+  .ahead{border:1px solid var(--z2);background:#FDF3EC;padding:15px 17px;margin:18px 0}
+  .ahead b{display:block;font-size:14px;color:var(--z2);margin-bottom:8px}
+  .aheadlist{font-size:15px;font-weight:700;margin:0 0 10px;line-height:1.6}
+  .aheadnote{font-size:14.5px;margin:0 0 8px}
+  .aheadwhy{font-size:13.5px;color:var(--soft);margin:0;padding-top:8px;border-top:1px dashed var(--rule)}
+  .li.ahead .n{background:var(--z2);border-color:var(--z2);color:var(--card)}
   .alt{border:1px dashed var(--soft);background:transparent;padding:14px 16px;margin:16px 0;font-size:14px}
   .alt b{display:block;margin-bottom:5px;font-size:13.5px}
   h2.sec{font-size:13px;font-weight:700;margin:30px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--rule)}
@@ -676,7 +687,12 @@ const DEEP={
    ]}]
 };
 
+const SKIPQ={id:"skip",multi:true,
+  q:"この先のステップで、すでに着手・完了しているものはありますか？",
+  note:"順番どおりでなくても構いません。当てはまるものをすべて選んでください。"};
+
 const QMAP=Object.assign({}, COMMON);
+QMAP.skip=SKIPQ;
 GATES.forEach(g=>QMAP["g"+g.n]={id:"g"+g.n,q:g.q,note:g.note,opts:g.opts,gate:g.n});
 Object.keys(DEEP).forEach(n=>DEEP[n].forEach(d=>{ QMAP[d.id]={id:d.id,q:d.q,opts:d.opts,deep:+n}; }));
 
@@ -762,17 +778,17 @@ function encodeAns(){
   let d="";
   if(n) d=DEEP[n].map(x=>deepAns[x.id]===undefined?"":String(deepAns[x.id])).join("");
   return C_SCALE[ans.scale]+C_STORE[ans.store]+C_WHERE[ans.where]+C_WHY[ans.why]+C_GOAL[ans.goal]
-         +g+(d?"-"+d:"");
+         +g+(d?"-"+d:"")+(skipSel.length?"s"+skipSel.join(""):"");
 }
 function decodeAns(code){
-  const m=code.match(/^([a-z]{5})([0-3]{0,8})(?:-([0-3]{0,2}))?$/);
+  const m=code.match(/^([a-z]{5})([0-3]{0,8})(?:-([0-3]{0,2}))?(?:s([1-8]{0,8}))?$/);
   if(!m) return null;
   const sc=rev(C_SCALE)[m[1][0]], st=rev(C_STORE)[m[1][1]], w=rev(C_WHERE)[m[1][2]],
         y=rev(C_WHY)[m[1][3]], g=rev(C_GOAL)[m[1][4]];
   if(!sc||!st||!w||!y||!g) return null;
   const ga={};
   for(let i=0;i<m[2].length;i++) ga[i+1]=+m[2][i];
-  return {ans:{scale:sc,store:st,where:w,why:y,goal:g}, gateAns:ga, deepRaw:m[3]||""};
+  return {ans:{scale:sc,store:st,where:w,why:y,goal:g}, gateAns:ga, deepRaw:m[3]||"", skip:(m[4]||"").split("").map(Number)};
 }
 function baseUrl(){
   const set=(CONFIG.publicUrl||"").trim();
@@ -795,6 +811,7 @@ function urlWarning(){
 const FLOW0=["scale","store","where"];
 let phase="hero", qi=0, flow=FLOW0.slice(), fromPhone=false, idleTimer=null;
 const ans={}, gateAns={}, deepAns={}, lead={};
+let skipSel=[];
 const app=document.getElementById("app");
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const validMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
@@ -814,13 +831,14 @@ function judge(){
 /* ===== 画面遷移 ================================================ */
 function boot(){
   loadQRLib();
-  const m=(location.hash||"").match(/r=([a-z]{5}[0-3]{0,8}(?:-[0-3]{0,2})?)/i);
+  const m=(location.hash||"").match(/r=([a-z]{5}[0-3]{0,8}(?:-[0-3]{0,2})?(?:s[1-8]{0,8})?)/i);
   if(m){
     const d=decodeAns(m[1].toLowerCase());
     if(d){
       Object.assign(ans,d.ans); Object.assign(gateAns,d.gateAns);
       const n=lastDeep();
       if(n&&d.deepRaw) DEEP[n].forEach((x,i)=>{ if(d.deepRaw[i]!==undefined) deepAns[x.id]=+d.deepRaw[i]; });
+      skipSel=d.skip||[];
       fromPhone=true; phase="result";
     }
   }
@@ -836,6 +854,7 @@ function reset(){
   Object.keys(ans).forEach(k=>delete ans[k]);
   Object.keys(gateAns).forEach(k=>delete gateAns[k]);
   Object.keys(deepAns).forEach(k=>delete deepAns[k]);
+  skipSel=[];
   phase="hero"; qi=0; flow=FLOW0.slice(); render(); window.scrollTo(0,0);
 }
 function render(){
@@ -918,8 +937,10 @@ function advance(q,opt){
   else if(q.deep){                                 // 深掘りは1問ずつ進める
     const list=DEEP[q.deep];
     const idx=list.findIndex(d=>d.id===q.id);
-    flow.push(idx+1<list.length ? list[idx+1].id : "why");
+    if(idx+1<list.length) flow.push(list[idx+1].id);
+    else flow.push(q.deep<8 ? "skip" : "why");
   }
+  else if(q.id==="skip")  flow.push("why");
   else if(q.id==="scale") flow.push("store");
   else if(q.id==="store") flow.push("where");
   else if(q.id==="where") flow.push("g1");
@@ -930,6 +951,7 @@ function advance(q,opt){
 
 function question(){
   const q=QMAP[flow[qi]];
+  if(q.multi) return multiQuestion(q);
   app.innerHTML=`
   <p class="qnum">質問 ${qi+1}${q.gate?`　／　ステップ${q.gate}の確認`:""}</p>
   <p class="qtext">${q.q}</p>
@@ -954,6 +976,31 @@ function question(){
   };
 }
 
+function multiQuestion(q){
+  const j=judge();
+  const rest=STEPS.filter(x=>x.n>j.gateAt);
+  app.innerHTML=`
+  <p class="qnum">質問 ${qi+1}</p>
+  <p class="qtext">${q.q}</p>
+  <p class="qnote">${q.note}</p>
+  ${rest.map(x=>`<button class="opt multi${skipSel.includes(x.n)?" on":""}" data-n="${x.n}">
+      <span class="chk2">${skipSel.includes(x.n)?"✓":""}</span>${x.n}. ${x.t}</button>`).join("")}
+  <button class="opt multi${skipSel.length===0?" on":""}" data-n="0">
+    <span class="chk2">${skipSel.length===0?"✓":""}</span>特にない</button>
+  <div style="margin-top:18px"><button class="go" id="nx">次へ</button></div>
+  <div style="margin-top:14px"><button class="ghost" id="b">← 戻る</button></div>`;
+  document.querySelectorAll(".multi").forEach(b=>b.onclick=()=>{
+    const n=+b.dataset.n;
+    if(n===0) skipSel=[];
+    else skipSel = skipSel.includes(n) ? skipSel.filter(v=>v!==n) : skipSel.concat(n).sort((a,b)=>a-b);
+    render();
+  });
+  document.getElementById("nx").onclick=()=>{
+    flow.length=qi+1; advance(q,null); render(); window.scrollTo(0,0);
+  };
+  document.getElementById("b").onclick=()=>{ qi--; flow.length=qi+1; render(); };
+}
+
 function gate(){
   app.innerHTML=`
   <p class="qnum">診断が完了しました</p>
@@ -976,7 +1023,7 @@ function gate(){
     lead.email=v;
     const j=judge();
     await submitLead({company:lead.company,name:lead.name,email:lead.email,
-      answers:{...ans},gates:{...gateAns},deep:{...deepAns},cleared:j.cleared,gateAt:j.gateAt,
+      answers:{...ans},gates:{...gateAns},deep:{...deepAns},ahead:skipSel.slice(),cleared:j.cleared,gateAt:j.gateAt,
       at:new Date().toISOString()});
     phase="result"; render(); window.scrollTo(0,0);
   };
@@ -1031,6 +1078,9 @@ ${road}
 ■ ${j.completed?"いまの状態":`ステップ${j.gateAt}について`}
 ${j.completed?"部門推進と成果報告会が回っている状態です。完全ペーパーレスという終点に着くのではなく、更新され続ける仕組みが残ることが着地点になります。":j.choice.note}
 
+■ すでに進んでいる部分
+${skipSel.length?skipSel.map(n=>`・${n}. ${STEPS[n-1].t}`).join("\n")+`\n※ ステップ${j.gateAt}が抜けたまま進んでいる状態です。いったん立ち止まって整理し直すことをおすすめします。`:"（なし）"}
+
 ■ 止まっている理由
 ${j.gateAt?DEEP[j.gateAt].filter(d=>deepAns[d.id]!==undefined).map(d=>{const o=d.opts[deepAns[d.id]];return `・${d.q}\n　→ ${o.t}\n　　${o.note}`;}).join("\n"):"（8つすべて通過）"}
 
@@ -1059,13 +1109,21 @@ function result(){
     ? `<div class="dist"><b>関門なし</b><span>8ステップすべて通過</span></div>
        <p class="rtype">仕組みが回っている状態です</p>
        <p class="rsub">部門推進と成果報告会が動いています。ここから先は、対象を広げながら方針を更新していく段階です。</p>`
-    : `<div class="dist"><b>あと${j.left}ステップ</b><span>最初の関門はステップ${j.gateAt}</span></div>
+    : `<div class="dist"><b>あと${j.left}ステップ</b><span>最初の関門はステップ${j.gateAt}${skipSel.length?`　／　うち${skipSel.length}ステップは着手済み`:""}</span></div>
        <p class="rtype">${STEPS[j.gateAt-1].t}</p>
        <p class="rsub">${STEPS[j.gateAt-1].l}</p>`}
   ${routeSVG(j)}
   <div class="verdict"><p>${j.completed
     ? "完全ペーパーレスという終点に着くのではなく、更新され続ける仕組みが残ることが着地点です。7と8を回し続けてください。"
     : j.choice.note}</p></div>
+
+  ${(j.gateAt&&skipSel.length)?`
+  <div class="ahead">
+    <b>すでに進んでいる部分があります</b>
+    <p class="aheadlist">${skipSel.map(n=>`${n}. ${STEPS[n-1].t}`).join("　／　")}</p>
+    <p class="aheadnote">ここまで進めてこられた部分は、無駄にはなりません。ただ、ステップ${j.gateAt}「${STEPS[j.gateAt-1].t}」が抜けたまま先へ進んでいる状態です。${j.gateAt<=3?"区間1は、以降のすべての判断のよりどころになる部分です。":"この工程は、以降の判断の前提になる部分です。"}いったん立ち止まって、ここを整理し直すことをおすすめします。</p>
+    <p class="aheadwhy">整理せずに進めた場合、${j.gateAt===1?"数字の裏づけがないまま決めた方針を、後から作り直すことになりがちです。":j.gateAt===2?"目的が定まらないまま進んだ施策は、成果を問われた時に答えられなくなります。":j.gateAt===3?"経営の決定がないまま進めた説明や依頼は、部門にとって優先順位が上がりません。":"前提が抜けたまま進んだ部分は、後から手戻りが発生しやすくなります。"}</p>
+  </div>`:""}
 
   ${j.gateAt?`
   <h2 class="sec">止まっている理由</h2>
@@ -1092,9 +1150,10 @@ function result(){
     return `<div class="zone">
       <div class="zhead"><span class="zdot" style="background:${z.c}"></span>${z.n}<span class="zcount">${d} / ${list.length} 通過</span></div>
       ${list.map(s=>{
-        const st = s.n<=j.cleared?"ok" : s.n===j.gateAt?"now" : "";
-        const mk = s.n<=j.cleared?"済" : s.n;
-        return `<div class="li ${st}"><span class="n">${mk}</span><span>${s.t}${s.n===j.gateAt?"　← 最初の関門":""}</span></div>`;
+        const ahead = skipSel.includes(s.n);
+        const st = s.n<=j.cleared?"ok" : s.n===j.gateAt?"now" : ahead?"ahead" : "";
+        const mk = s.n<=j.cleared?"済" : ahead?"先" : s.n;
+        return `<div class="li ${st}"><span class="n">${mk}</span><span>${s.t}${s.n===j.gateAt?"　← 最初の関門":ahead?"　（着手済み）":""}</span></div>`;
       }).join("")}
       <p class="zex">外部が担える部分　${z.ex}</p>
     </div>`;}).join("")}
