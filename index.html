@@ -83,6 +83,13 @@
   .mild{font-size:14.5px;color:var(--soft);margin:0 0 10px;padding:8px 13px;background:var(--tint);border-radius:10px}
   .rlead{font-size:16.5px;margin:16px 0 0;line-height:1.9}
   .rwhere{font-size:14.5px;color:var(--soft);margin:8px 0 0}
+  .focus{margin:12px 0 0;padding:0;list-style:none}
+  .focus li{position:relative;padding-left:20px;font-size:15.5px;line-height:1.8;margin-bottom:5px}
+  .focus li::before{content:"";position:absolute;left:0;top:.76em;width:10px;height:2px;background:var(--coral)}
+  .focus li:last-child{margin-bottom:0}
+  .sublab{font-size:13px;font-weight:700;color:var(--soft);margin:0 0 7px;letter-spacing:.04em}
+  .exlist{margin:7px 0 0;padding-left:1.2em}
+  .exlist li{margin-bottom:4px}
 
   .sec{margin-top:26px;padding-top:22px;border-top:1.5px solid var(--line)}
   .sh{font-size:17px;font-weight:700;color:var(--main);margin:0 0 12px;letter-spacing:.04em}
@@ -549,7 +556,7 @@ const DEEP={
  B:[
   {id:"dB1",q:"紙を残している理由として、最も近いものは？",
    opts:[
-    {t:"法令や契約で保存義務があるため",hyp:"保存義務のある書類と、そうでない書類が混在している可能性があります。"},
+    {t:"法令や契約で保存義務があるため",hyp:"保存要件を確認し、紙での保管が必要な文書と、電子保存を検討できる文書を区別することが重要です。"},
     {t:"社内ルールで保管することになっているため",hyp:"ルールが現在の電子保存の要件に追いついていない可能性があります。"},
     {t:"後から必要になるかもしれないため",hyp:"必要になる場面が具体化されないまま、念のための保管が続いているようです。"},
     {t:"なぜ残しているのか分からない",hyp:"残す理由が引き継がれないまま、慣習として続いている可能性があります。"}
@@ -564,7 +571,7 @@ const DEEP={
  C:[
   {id:"dC1",q:"文書を残す理由として、最も近いものは？",
    opts:[
-    {t:"保存義務があるため",hyp:"保存義務のある書類と、慣習で残している書類が区別されていない可能性があります。"},
+    {t:"保存義務があるため",hyp:"保存要件を確認し、紙での保管が必要な文書と、電子保存を検討できる文書を区別することが重要です。"},
     {t:"社内ルールで保管することになっているため",hyp:"ルールが実態に合わなくなっている可能性があります。"},
     {t:"後から必要になるかもしれないため",hyp:"判断の基準がないため、安全側に倒した保管が積み重なっているようです。"},
     {t:"なぜ残しているのか分からない",hyp:"残す理由が文書になっておらず、人に依存している可能性があります。"}
@@ -626,40 +633,67 @@ const DEEP={
 /* ===== 結果タイプ（6領域に対応）================================ */
 const TYPES={
  A:{title:"現状が、数字で見えていない",
-    lead:"紙の量が数字になっていないため、どこから手をつけるかの判断が難しい状態かもしれません。",
+    lead:"紙の量や保管状況が数字で把握されていないため、どこから改善するか判断しにくい状態かもしれません。",
     check:"部門ごとの保管量を、同じ単位で比べられる形になっていますか？",
     act:"紙の多い1部門を選び、保管量と文書の種類を数えてみましょう。",
     steps:[1]},
- B:{title:"紙とデータが、二重に動いている",
-    lead:"電子化が進んでいても、紙の保管が並行して続いている可能性があります。",
-    check:"同じ内容の書類を、紙と電子の両方で保管していませんか？",
-    act:"参照頻度の高い書類から、どちらを正とするかを決めましょう。",
+ B:{title:"紙に頼る業務が、残っている",
+    lead:"紙を使うことが前提となっている業務や、電子データと紙の二重管理が残っている可能性があります。",
+    check:"紙を使う必要がある業務と、習慣で紙を使い続けている業務を区別できていますか？",
+    act:"紙を使っている業務を1つ選び、なぜ紙が必要なのかを確認しましょう。",
     steps:[4,7]},
  C:{title:"文書管理の基準が、曖昧",
-    lead:"残す・減らす・電子化する判断が、人や部署によって異なっている可能性があります。",
+    lead:"文書を残す・減らす・電子化する判断基準が、部署や担当者によって異なっている可能性があります。",
     check:"社内の文書管理規程と、現場での保管・廃棄の判断は一致していますか？",
     act:"紙の多い1部門で、主要な文書カテゴリーと保管理由を洗い出しましょう。",
     steps:[4]},
- D:{title:"目的と経営の意思が、共有されていない",
-    lead:"何のために取り組むのかが社内で揃っていないため、協力が得られにくい状態かもしれません。",
-    check:"この取り組みは、経営の決定として社内に伝わっていますか？",
+ D:{title:"取り組む目的が、組織で揃っていない",
+    lead:"ペーパーレスに取り組む目的や経営方針が十分に共有されず、部門ごとの協力や行動につながっていない可能性があります。",
+    check:"何のために紙を減らすのか、経営層と現場で共通認識を持てていますか？",
     act:"目的を一文にまとめ、経営層と読み合わせる場をつくりましょう。",
     steps:[2,3]},
  E:{title:"進める体制が、整っていない",
-    lead:"手を動かす人が決まっていないため、方針があっても実行に移りにくい状態のようです。",
+    lead:"推進する担当者や役割分担が十分に決まっておらず、方針があっても実行に移りにくい状態かもしれません。",
     check:"各部門で、誰が進めるかは決まっていますか？",
     act:"紙の多い部門から順に、担当者を決めて顔合わせをしましょう。",
     steps:[5,6]},
- F:{title:"取り組みが、続く形になっていない",
-    lead:"一度整理しても、また戻ってしまう構造が残っている可能性があります。",
-    check:"減らせた成果は、社内で共有されていますか？",
+ F:{title:"改善が、続く仕組みになっていない",
+    lead:"紙を減らす取り組みが、一時的な活動にとどまり、現場からの改善や成果の共有が継続する仕組みになっていない可能性があります。",
+    check:"社員が改善を提案したり、成果を共有したりする機会はありますか？",
     act:"見直す日を決めて年間予定に組み込み、進捗を同じ形で集めましょう。",
     steps:[7,8]},
  OK:{title:"大きな課題は見当たりません",
-    lead:"いただいた回答の範囲では、進め方に目立った問題は見られませんでした。",
+    lead:"今回の回答からは、優先して改善すべき大きな課題は確認されませんでした。今後も継続して改善できる仕組みがあるか確認しましょう。",
     check:"いまの状態を、担当者が変わっても続けられる形にできていますか？",
     act:"手順と基準を文書にまとめ、引き継げる形にしておきましょう。",
     steps:[8]}
+};
+
+/* ===== 回答内容に応じた補足（タイプB・D・F）====================
+   同じタイプでも、どの設問が課題を示したかで説明を変える。
+   ============================================================== */
+const FOCUS={
+  B:{q3:"電子データがある書類を、紙でも保管している状態が見られます（紙と電子の二重管理）。",
+     q5:"紙がないと進まない業務が残っています（紙を前提とした業務）。"},
+  D:{q6:"取り組む目的が、社内で共有しきれていない状態が見られます。",
+     q7:"経営層の関与が、まだ十分でない可能性があります。"},
+  F:{q9:"現場から改善の提案が出てくる状態になっていません。",
+     q10:"減らせた成果を共有する機会が、続く形になっていません。"}
+};
+
+/* ===== この診断では確認していない観点 ==========================
+   設問で聞いていないため、断定せず「あわせて確認を」として示す。
+   ============================================================== */
+const EXTRA={
+  A:[],
+  B:["電子データの保存場所やファイル名のつけ方が統一され、担当者以外でも必要なデータを探せる状態か",
+     "法令・契約・業務上、紙での保管が必要な文書かどうか"],
+  C:["法令・契約・業務上、紙での保管が必要な文書かどうか"],
+  D:[],
+  E:["紙をなくすことへの不安や、新しい運用への戸惑いが現場にないか"],
+  F:["紙をなくすことへの不安や、新しい運用への戸惑いが現場にないか",
+     "改善が習慣として定着しているかどうか（今回の設問では確認していません）"],
+  OK:[]
 };
 
 /* ===== 8ステップ（推奨アクションの参照体系）==================== */
@@ -698,7 +732,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
    3 最も優先度の高い領域を1つ選ぶ（同点は前提となる領域を優先）
    ============================================================== */
 function judge(){
-  const sum={}, cnt={}, vals={}, unknown=[], ev=[];
+  const sum={}, cnt={}, vals={}, unknown=[], ev=[], qscore={};
   for(const area of Object.keys(AREAS)){ sum[area]=0; cnt[area]=0; vals[area]=[]; }
 
   Q.forEach(q=>{
@@ -706,7 +740,7 @@ function judge(){
     const i=ans[q.id]; if(i===undefined) return;
     const o=q.opts[i];
     if(o.unknown){ unknown.push(q.head); return; }
-    sum[q.area]+=o.s; cnt[q.area]++; vals[q.area].push(o.s);
+    sum[q.area]+=o.s; cnt[q.area]++; vals[q.area].push(o.s); qscore[q.id]=o.s;
     if(o.ev) ev.push({area:q.area, text:o.ev, s:o.s});
   });
 
@@ -744,7 +778,21 @@ function judge(){
     return (rank(p.area)-rank(q2.area)) || (q2.s-p.s);
   }).slice(0,3);
 
-  return {scores, ranked, primary, related, good, mild, unknown, spread,
+  // 同じタイプでも、どの設問が課題を示したかで説明を変える
+  let focus=[];
+  if(primary && FOCUS[primary]){
+    const ids=Object.keys(FOCUS[primary]);
+    const strong=ids.filter(id=>qscore[id]!==undefined && qscore[id]>=2);
+    if(strong.length) focus=strong.map(id=>FOCUS[primary][id]);
+    else {
+      const rest=ids.filter(id=>qscore[id]!==undefined && qscore[id]>=1)
+                    .sort((a,b)=>qscore[b]-qscore[a]);
+      if(rest.length) focus=[FOCUS[primary][rest[0]]];
+    }
+  }
+  const extra = EXTRA[primary||"OK"]||[];
+
+  return {scores, ranked, primary, related, good, mild, unknown, spread, qscore, focus, extra,
           ev:evSorted, type: primary ? TYPES[primary] : TYPES.OK};
 }
 
@@ -900,9 +948,9 @@ function memoText(j,dp){
 ${j.mild?"（全体として大きな問題は見られません。あえて挙げるなら）\n":""}${t.title}
 ${t.lead}
 
-■ そう考えられる理由
+${j.focus.length?"■ 回答内容からの補足\n"+j.focus.map(f=>"・"+f).join("\n")+"\n\n":""}■ そう考えられる理由（ご回答から確認できたこと）
 ${j.ev.length?j.ev.map(e=>"・"+e.text).join("\n"):"・該当する回答はありませんでした"}
-${dp.hyp?"\n考えられる背景："+dp.hyp:""}
+${dp.hyp?"\nここから考えられること（仮説）："+dp.hyp:""}
 
 ■ まず確認したいこと
 ${t.check}
@@ -914,6 +962,7 @@ ${dp.act||t.act}
 ${t.steps.map(n=>`STEP ${n}｜${STEPS[n-1].t}`).join(" ／ ")}
 ${where?"\n■ 紙が多く残っている場所\n"+where:""}
 ${j.related.length?"\n■ あわせて確認したい領域\n"+j.related.map(a=>AREAS[a].name+"（"+AREAS[a].label+"）").join("\n"):""}
+${j.extra.length?"\n■ この診断では確認していないこと\n"+j.extra.map(x=>"・"+x).join("\n"):""}
 ${j.unknown.length>=2?"\n※ 「分からない」とお答えいただいた項目があるため、この診断で確認できた範囲は限定的です。":""}
 ${j.spread?"\n※ 同じ領域の中で回答に幅があったため、原因は断定していません。":""}
 
@@ -943,14 +992,17 @@ function result(){
       <div class="hi">${ART_RESULT}</div>
     </div>
     <p class="rlead">${t.lead}</p>
+    ${j.focus.length?`<ul class="focus">${j.focus.map(f=>`<li>${f}</li>`).join("")}</ul>`:""}
+    ${(j.good&&j.unknown.length>=1)?`<p class="rwhere">ただし「分からない」とお答えいただいた項目があるため、確認できた範囲は限定的です。</p>`:""}
     ${where?`<p class="rwhere">紙が多く残っているのは「${where}」とのことでした。</p>`:""}
 
     <div class="sec">
       <h2 class="sh">そう考えられる理由</h2>
+      <p class="sublab">ご回答から確認できたこと</p>
       ${j.ev.length
         ? `<ul class="evlist">${j.ev.map(e=>`<li>${e.text}</li>`).join("")}</ul>`
         : `<p style="margin:0;font-size:16px">目立った課題を示す回答はありませんでした。</p>`}
-      ${dp.hyp?`<div class="hyp"><b>考えられる背景</b>${dp.hyp}</div>`:""}
+      ${dp.hyp?`<div class="hyp"><b>ここから考えられること（仮説）</b>${dp.hyp}</div>`:""}
     </div>
 
     <div class="sec">
@@ -971,6 +1023,10 @@ function result(){
     <div class="sec">
       <h2 class="sh">推奨する実行ステップ</h2>
       <div class="steps">${t.steps.map(n=>`<div class="stp"><b>${n}</b><span>STEP ${n}｜${STEPS[n-1].t}</span></div>`).join("")}</div>
+      ${j.extra.length?`<div class="caveat">
+        <b>この診断では確認していないこと</b>次の点は今回の設問では聞いていません。あわせて確認すると、原因を絞り込みやすくなります。
+        <ul class="exlist">${j.extra.map(x=>`<li>${x}</li>`).join("")}</ul>
+      </div>`:""}
       ${(j.unknown.length>=2||j.spread)?`<div class="caveat">
         ${j.unknown.length>=2?`<b>この診断で確認できた範囲は限定的です</b>「分からない」とお答えいただいた項目（${j.unknown.join("・")}）があるため、実態の確認が別途必要です。`:""}
         ${j.spread?`${j.unknown.length>=2?"<br><br>":""}<b>原因は断定していません</b>同じ領域の中で回答に幅があったため、複数の要因が重なっている可能性があります。`:""}
